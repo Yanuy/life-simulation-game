@@ -1,156 +1,231 @@
-// 技能管理类
-class SkillManager {
+/**
+ * skills.js - 技能系统模块
+ * 负责管理游戏中的技能树和技能升级
+ */
+
+class SkillSystem {
     constructor() {
-        this.skillDefinations = {
-            "学术基础": {
-                id: "academic-basics",
-                name: "学术基础",
-                description: "提高学习效率和考试成绩",
-                maxLevel: 10,
-                effects: {
-                    intelligenceBonus: 0.2 // 每级智力提升倍率
-                }
+        this.skills = {
+            academicBasics: {
+                name: '学术基础',
+                description: '提高学习效率和考试成绩',
+                levels: [
+                    { requirement: 0, effect: '学习效率+5%' },
+                    { requirement: 100, effect: '学习效率+10%, 考试成绩+5%' },
+                    { requirement: 200, effect: '学习效率+15%, 考试成绩+10%' },
+                    { requirement: 300, effect: '学习效率+20%, 考试成绩+15%' },
+                    { requirement: 400, effect: '学习效率+25%, 考试成绩+20%' },
+                    { requirement: 500, effect: '学习效率+30%, 考试成绩+25%' }
+                ],
+                unlockRequirements: null // 默认解锁
             },
-            "体育锻炼": {
-                id: "physical-training",
-                name: "体育锻炼",
-                description: "提高体质和健康",
-                maxLevel: 10,
-                effects: {
-                    fitnessBonus: 0.2, // 每级体质提升倍率
-                    healthBonus: 0.1  // 每级体力恢复提升倍率
-                }
+            physicalTraining: {
+                name: '体育锻炼',
+                description: '提高体质和健康',
+                levels: [
+                    { requirement: 0, effect: '体质恢复+5%' },
+                    { requirement: 100, effect: '体质恢复+10%, 健康+5%' },
+                    { requirement: 200, effect: '体质恢复+15%, 健康+10%' },
+                    { requirement: 300, effect: '体质恢复+20%, 健康+15%' },
+                    { requirement: 400, effect: '体质恢复+25%, 健康+20%' },
+                    { requirement: 500, effect: '体质恢复+30%, 健康+25%' }
+                ],
+                unlockRequirements: null // 默认解锁
             },
-            "社交能力": {
-                id: "social-skills",
-                name: "社交能力",
-                description: "提高魅力和人际关系",
-                maxLevel: 10,
-                effects: {
-                    charmBonus: 0.2, // 每级魅力提升倍率
-                    relationshipBonus: 0.1 // 每级关系提升倍率
-                }
+            socialSkills: {
+                name: '社交能力',
+                description: '提高魅力和人际关系',
+                levels: [
+                    { requirement: 0, effect: '魅力+5%' },
+                    { requirement: 100, effect: '魅力+10%, 关系提升+5%' },
+                    { requirement: 200, effect: '魅力+15%, 关系提升+10%' },
+                    { requirement: 300, effect: '魅力+20%, 关系提升+15%' },
+                    { requirement: 400, effect: '魅力+25%, 关系提升+20%' },
+                    { requirement: 500, effect: '魅力+30%, 关系提升+25%' }
+                ],
+                unlockRequirements: { minAge: 12 } // 12岁后解锁或通过特定物品解锁
             },
-            "专业技能": {
-                id: "professional-skills",
-                name: "专业技能",
-                description: "提高工作效率和收入",
-                maxLevel: 10,
-                effects: {
-                    incomeBonus: 0.15 // 每级收入提升倍率
-                }
+            professionalSkills: {
+                name: '专业技能',
+                description: '提高工作效率和收入',
+                levels: [
+                    { requirement: 0, effect: '工作效率+5%' },
+                    { requirement: 100, effect: '工作效率+10%, 收入+5%' },
+                    { requirement: 200, effect: '工作效率+15%, 收入+10%' },
+                    { requirement: 300, effect: '工作效率+20%, 收入+15%' },
+                    { requirement: 400, effect: '工作效率+25%, 收入+20%' },
+                    { requirement: 500, effect: '工作效率+30%, 收入+25%' }
+                ],
+                unlockRequirements: { minAge: 18, lifeStage: '大学' } // 大学阶段解锁
             },
-            "理财能力": {
-                id: "financial-skills",
-                name: "理财能力",
-                description: "提高资金管理和投资回报",
-                maxLevel: 10,
-                effects: {
-                    investmentBonus: 0.1 // 每级投资回报提升倍率
-                }
+            financialSkills: {
+                name: '理财能力',
+                description: '提高资金管理和投资回报',
+                levels: [
+                    { requirement: 0, effect: '投资回报+5%' },
+                    { requirement: 100, effect: '投资回报+10%, 消费折扣+5%' },
+                    { requirement: 200, effect: '投资回报+15%, 消费折扣+10%' },
+                    { requirement: 300, effect: '投资回报+20%, 消费折扣+15%' },
+                    { requirement: 400, effect: '投资回报+25%, 消费折扣+20%' },
+                    { requirement: 500, effect: '投资回报+30%, 消费折扣+25%' }
+                ],
+                unlockRequirements: { minAge: 18 } // 18岁后解锁或通过特定物品解锁
             }
         };
     }
     
-    getSkillId(skillName) {
-        if (this.skillDefinations[skillName]) {
-            return this.skillDefinations[skillName].id;
+    // 检查技能是否可以解锁
+    canUnlockSkill(skillId, character) {
+        const skill = this.skills[skillId];
+        if (!skill || !skill.unlockRequirements) {
+            return true; // 没有要求或技能不存在
         }
-        return skillName.toLowerCase().replace(/\s+/g, '-');
+        
+        const requirements = skill.unlockRequirements;
+        
+        // 检查年龄要求
+        if (requirements.minAge && character.age < requirements.minAge) {
+            return false;
+        }
+        
+        // 检查生命阶段要求
+        if (requirements.lifeStage && character.lifeStage !== requirements.lifeStage) {
+            return false;
+        }
+        
+        // 检查属性要求
+        if (requirements.attributes) {
+            for (const [attr, minValue] of Object.entries(requirements.attributes)) {
+                if (character.attributes[attr] < minValue) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
     }
     
-    updateSkills(character, timeAllocation) {
-        // 根据时间分配更新技能进度
-        
-        // 学习时间影响学术基础技能
-        if (!character.skills["学术基础"].locked) {
-            const progressGain = timeAllocation.study * 1.2;
-            character.addSkillProgress("学术基础", progressGain);
+    // 尝试解锁技能
+    tryUnlockSkills(character) {
+        for (const skillId in this.skills) {
+            if (character.skills[skillId] && character.skills[skillId].locked) {
+                if (this.canUnlockSkill(skillId, character)) {
+                    character.unlockSkill(skillId);
+                    Game.addEventLog(`解锁了技能: ${this.skills[skillId].name}`);
+                }
+            }
         }
-        
-        // 健身时间影响体育锻炼技能
-        if (!character.skills["体育锻炼"].locked) {
-            const progressGain = timeAllocation.fitness * 1.5;
-            character.addSkillProgress("体育锻炼", progressGain);
-        }
-        
-        // 社交时间影响社交能力技能
-        if (!character.skills["社交能力"].locked) {
-            const progressGain = timeAllocation.social * 1.5;
-            character.addSkillProgress("社交能力", progressGain);
-        }
-        
-        // 工作时间影响专业技能
-        if (!character.skills["专业技能"].locked) {
-            const progressGain = timeAllocation.work * 1.2;
-            character.addSkillProgress("专业技能", progressGain);
-        }
-        
-        // 应用技能效果
-        this.applySkillEffects(character);
     }
     
-    applySkillEffects(character) {
-        // 应用学术基础技能效果
-        if (character.skills["学术基础"] && character.skills["学术基础"].level > 0) {
-            const baseBonus = this.skillDefinations["学术基础"].effects.intelligenceBonus;
-            const bonus = baseBonus * character.skills["学术基础"].level;
-            // 已经在进入下一年时应用了基础智力增长，这里只应用额外奖励
-            character.attributes.intelligence += bonus;
+    // 获取技能等级描述
+    getSkillLevelDescription(skillId, level) {
+        const skill = this.skills[skillId];
+        if (!skill) {
+            return '';
         }
         
-        // 应用体育锻炼技能效果
-        if (character.skills["体育锻炼"] && character.skills["体育锻炼"].level > 0) {
-            const fitnessBonus = this.skillDefinations["体育锻炼"].effects.fitnessBonus;
-            const healthBonus = this.skillDefinations["体育锻炼"].effects.healthBonus;
-            const fitnessIncrease = fitnessBonus * character.skills["体育锻炼"].level;
-            const healthIncrease = healthBonus * character.skills["体育锻炼"].level;
+        // 找到当前等级的描述
+        for (let i = skill.levels.length - 1; i >= 0; i--) {
+            if (level >= Math.floor(skill.levels[i].requirement / 100)) {
+                return skill.levels[i].effect;
+            }
+        }
+        
+        return skill.levels[0].effect;
+    }
+    
+    // 渲染技能树
+    renderSkillTree(character) {
+        const container = document.getElementById('skills-container');
+        container.innerHTML = '';
+        
+        for (const skillId in this.skills) {
+            const skill = this.skills[skillId];
+            const characterSkill = character.skills[skillId];
             
-            character.attributes.fitness += fitnessIncrease;
-            character.attributes.health += healthIncrease;
-        }
-        
-        // 应用社交能力技能效果
-        if (character.skills["社交能力"] && character.skills["社交能力"].level > 0) {
-            const charmBonus = this.skillDefinations["社交能力"].effects.charmBonus;
-            const charmIncrease = charmBonus * character.skills["社交能力"].level;
+            const skillElement = document.createElement('div');
+            skillElement.className = 'skill-item';
+            if (characterSkill.locked) {
+                skillElement.classList.add('locked');
+            }
             
-            character.attributes.charm += charmIncrease;
+            const levelDescription = characterSkill.locked ? '未解锁' : this.getSkillLevelDescription(skillId, characterSkill.level);
+            
+            skillElement.innerHTML = `
+                <div class="skill-name">${skill.name} (Level <span id="${skillId.replace(/([A-Z])/g, '-$1').toLowerCase()}-level">${characterSkill.level}</span>)</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="${skillId.replace(/([A-Z])/g, '-$1').toLowerCase()}-progress" style="width: ${characterSkill.locked ? 0 : characterSkill.experience}%;"></div>
+                </div>
+                <div class="skill-description">${skill.description}</div>
+                <div class="skill-effect">${levelDescription}</div>
+            `;
+            
+            container.appendChild(skillElement);
         }
     }
     
-    unlockSkill(skillName) {
-        if (game.character.skills[skillName]) {
-            game.character.skills[skillName].locked = false;
-            game.addEventLog(`你解锁了${skillName}技能！`);
-            return true;
-        }
-        return false;
+    // 初始化时间分配监听器
+    initializeTimeAllocationListeners(character) {
+        const timeSliders = document.querySelectorAll('.time-slider');
+        const saveButton = document.getElementById('save-time-allocation');
+        
+        // 更新时间分配显示
+        const updateTimeDisplay = () => {
+            let total = 0;
+            
+            timeSliders.forEach(slider => {
+                const value = parseInt(slider.value);
+                const id = slider.id;
+                const activity = id.replace('-time', '');
+                
+                document.getElementById(`${id}-value`).textContent = `${value}%`;
+                total += value;
+            });
+            
+            const remaining = 100 - total;
+            document.getElementById('remaining-time-value').textContent = `${remaining}%`;
+            
+            // 如果总和超过100%，禁用保存按钮
+            if (total > 100) {
+                saveButton.disabled = true;
+                saveButton.title = '时间分配总和不能超过100%';
+                document.getElementById('remaining-time-value').style.color = 'red';
+            } else {
+                saveButton.disabled = false;
+                saveButton.title = '';
+                document.getElementById('remaining-time-value').style.color = '';
+            }
+        };
+        
+        // 为每个滑块添加事件监听器
+        timeSliders.forEach(slider => {
+            slider.addEventListener('input', updateTimeDisplay);
+        });
+        
+        // 保存时间分配
+        saveButton.addEventListener('click', () => {
+            const allocation = {};
+            let total = 0;
+            
+            timeSliders.forEach(slider => {
+                const value = parseInt(slider.value);
+                const activity = slider.id.replace('-time', '');
+                allocation[activity] = value;
+                total += value;
+            });
+            
+            if (total <= 100) {
+                character.setTimeAllocation(allocation);
+                Game.addEventLog('保存了时间分配');
+            }
+        });
+        
+        // 初始化显示
+        updateTimeDisplay();
     }
-    
-    // 检查并解锁新技能
-    checkAndUnlockSkills(character) {
-        // 根据年龄和属性解锁技能
-        
-        // 儿童期解锁学术基础和体育锻炼
-        if (character.age >= 6) {
-            this.unlockSkill("学术基础");
-            this.unlockSkill("体育锻炼");
-        }
-        
-        // 青少年期解锁社交能力
-        if (character.age >= 12) {
-            this.unlockSkill("社交能力");
-        }
-        
-        // 大学期或社会期解锁专业技能
-        if (character.age >= 18) {
-            this.unlockSkill("专业技能");
-        }
-        
-        // 社会期解锁理财能力
-        if (character.lifeStage === "society" || character.age >= 22) {
-            this.unlockSkill("理财能力");
-        }
-    }
+}
+
+// 导出SkillSystem类
+if (typeof module !== 'undefined') {
+    module.exports = SkillSystem;
 }

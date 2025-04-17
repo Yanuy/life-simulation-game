@@ -1,274 +1,347 @@
-// 物品管理类
-class ItemManager {
-    constructor() {
-        this.items = {
-            // 书籍
-            "textbook": {
-                id: "textbook",
-                name: "教科书",
-                description: "提高学习效率，增加智力",
-                price: 100,
-                minAge: 6,
-                lifeStages: ["child", "teen", "university", "graduate", "phd"],
-                use: (character) => {
-                    character.attributes.intelligence += 2;
-                    game.addEventLog("你学习了教科书，智力+2。");
-                },
-                consumable: true
-            },
-            "novel": {
-                id: "novel",
-                name: "小说",
-                description: "提高幸福感和智力",
-                price: 50,
-                minAge: 10,
-                lifeStages: ["child", "teen", "university", "graduate", "phd", "society"],
-                use: (character) => {
-                    character.attributes.intelligence += 1;
-                    character.attributes.happiness += 5;
-                    game.addEventLog("你阅读了一本小说，幸福感+5，智力+1。");
-                },
-                consumable: true
-            },
-            "study_guide": {
-                id: "study_guide",
-                name: "学习指南",
-                description: "大幅提高学习效率，为考试做准备",
-                price: 200,
-                minAge: 12,
-                lifeStages: ["teen", "university", "graduate", "phd"],
-                use: (character) => {
-                    character.attributes.intelligence += 5;
-                    character.addSkillProgress("学术基础", 20);
-                    game.addEventLog("你使用了学习指南，智力+5，学术基础技能进度+20。");
-                },
-                consumable: true
-            },
-            
-            // 电子设备
-            "smartphone": {
-                id: "smartphone",
-                name: "智能手机",
-                description: "提高社交能力和娱乐效果",
-                price: 2000,
-                minAge: 12,
-                lifeStages: ["teen", "university", "graduate", "phd", "society"],
-                use: (character) => {
-                    character.attributes.happiness += 3;
-                    character.addSkillProgress("社交能力", 5);
-                    game.addEventLog("你玩了会手机，幸福感+3，社交能力进度+5。");
-                },
-                consumable: false
-            },
-            "laptop": {
-                id: "laptop",
-                name: "笔记本电脑",
-                description: "提高学习和工作效率",
-                price: 5000,
-                minAge: 15,
-                lifeStages: ["teen", "university", "graduate", "phd", "society"],
-                use: (character) => {
-                    character.attributes.intelligence += 2;
-                    if (!character.skills["专业技能"].locked) {
-                        character.addSkillProgress("专业技能", 10);
-                    }
-                    game.addEventLog("你使用了电脑学习，智力+2，专业技能进度+10。");
-                },
-                consumable: false
-            },
-            
-            // 运动装备
-            "sports_equipment": {
-                id: "sports_equipment",
-                name: "运动器材",
-                description: "提高健身效果",
-                price: 1000,
-                minAge: 8,
-                lifeStages: ["child", "teen", "university", "graduate", "phd", "society"],
-                use: (character) => {
-                    character.attributes.fitness += 3;
-                    character.attributes.health += 5;
-                    character.addSkillProgress("体育锻炼", 15);
-                    game.addEventLog("你使用了运动器材，体质+3，体力+5，体育锻炼技能进度+15。");
-                },
-                consumable: false
-            },
-            
-            // 社交物品
-            "nice_clothes": {
-                id: "nice_clothes",
-                name: "时尚服装",
-                description: "提高魅力",
-                price: 500,
-                minAge: 12,
-                lifeStages: ["teen", "university", "graduate", "phd", "society"],
-                use: (character) => {
-                    character.attributes.charm += 5;
-                    game.addEventLog("你穿上了时尚服装，魅力+5。");
-                },
-                consumable: false
-            },
-            
-            // 饮食物品
-            "healthy_food": {
-                id: "healthy_food",
-                name: "健康食品",
-                description: "恢复体力",
-                price: 50,
-                minAge: 0,
-                lifeStages: ["infant", "child", "teen", "university", "graduate", "phd", "society"],
-                use: (character) => {
-                    character.attributes.health += 10;
-                    game.addEventLog("你吃了健康食品，体力+10。");
-                },
-                consumable: true
-            },
-            
-            // 投资物品
-            "stocks": {
-                id: "stocks",
-                name: "股票",
-                description: "进行投资，有风险也有回报",
-                price: 1000,
-                minAge: 18,
-                lifeStages: ["university", "graduate", "phd", "society"],
-                use: (character) => {
-                    const financialSkill = character.skills["理财能力"].level;
-                    const baseReturn = Math.random() * 0.2 - 0.05; // -5% 到 15% 的基础回报率
-                    const skillBonus = financialSkill * 0.01; // 每级理财能力增加1%回报率
-                    const returnRate = baseReturn + skillBonus;
-                    
-                    const profit = 1000 * returnRate;
-                    character.money += profit;
-                    
-                    character.addSkillProgress("理财能力", 10);
-                    
-                    if (profit > 0) {
-                        game.addEventLog(`你的投资获得了收益，获得¥${profit.toFixed(2)}。`);
-                    } else {
-                        game.addEventLog(`你的投资亏损了，损失¥${Math.abs(profit).toFixed(2)}。`);
-                    }
-                },
-                consumable: true
-            },
-            
-            // 高级物品
-            "certification": {
-                id: "certification",
-                name: "专业证书",
-                description: "获得专业认证，提高就业能力",
-                price: 3000,
-                minAge: 18,
-                lifeStages: ["university", "graduate", "phd", "society"],
-                use: (character) => {
-                    character.addSkillProgress("专业技能", 50);
-                    game.addEventLog("你获得了专业证书，专业技能进度+50。");
-                },
-                consumable: true
-            }
-        };
+/**
+ * items.js - 物品和商店模块
+ * 负责管理游戏中的物品、物品效果和商店系统
+ */
+
+class Item {
+    constructor(id, name, description, price, type, effects, requirements = {}) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.type = type; // 类型：书籍、电子产品、食品、装备等
+        this.effects = effects; // 使用效果
+        this.requirements = requirements; // 购买或使用要求
     }
     
+    // 检查角色是否满足使用要求
+    canUse(character) {
+        if (this.requirements.minAge && character.age < this.requirements.minAge) {
+            return false;
+        }
+        if (this.requirements.minIntelligence && character.attributes.intelligence < this.requirements.minIntelligence) {
+            return false;
+        }
+        if (this.requirements.lifeStage && character.lifeStage !== this.requirements.lifeStage) {
+            return false;
+        }
+        return true;
+    }
+    
+    // 使用物品，应用效果
+    use(character) {
+        if (!this.canUse(character)) {
+            return {
+                success: false,
+                message: "你不满足使用该物品的条件"
+            };
+        }
+        
+        // 应用物品效果
+        let effectsApplied = [];
+        
+        for (const effect of this.effects) {
+            switch (effect.type) {
+                case 'attribute':
+                    if (character.attributes[effect.target]) {
+                        character.attributes[effect.target] += effect.value;
+                        character.attributes[effect.target] = Math.max(0, Math.min(100, character.attributes[effect.target]));
+                        effectsApplied.push(`${effect.target} ${effect.value > 0 ? '+' : ''}${effect.value}`);
+                    }
+                    break;
+                    
+                case 'skill':
+                    if (character.skills[effect.target] && !character.skills[effect.target].locked) {
+                        character.gainSkillExperience(effect.target, effect.value);
+                        effectsApplied.push(`${effect.target} 经验 +${effect.value}`);
+                    }
+                    break;
+                    
+                case 'money':
+                    character.money += effect.value;
+                    effectsApplied.push(`金钱 ${effect.value > 0 ? '+' : ''}${effect.value}`);
+                    break;
+                    
+                case 'unlockSkill':
+                    if (character.skills[effect.target] && character.skills[effect.target].locked) {
+                        character.unlockSkill(effect.target);
+                        effectsApplied.push(`解锁技能: ${effect.target}`);
+                    }
+                    break;
+            }
+        }
+        
+        character.updateUI();
+        
+        return {
+            success: true,
+            message: `使用了 ${this.name}`,
+            effects: effectsApplied
+        };
+    }
+}
+
+class ItemManager {
+    constructor() {
+        this.items = {};
+        this.shopItems = [];
+        this.initializeItems();
+    }
+    
+    // 初始化物品库
+    initializeItems() {
+        // 学习类物品
+        this.registerItem(new Item(
+            'textbook',
+            '教科书',
+            '基础教材，提高学习效率',
+            50,
+            '书籍',
+            [
+                { type: 'attribute', target: 'intelligence', value: 5 },
+                { type: 'skill', target: 'academicBasics', value: 20 }
+            ]
+        ));
+        
+        this.registerItem(new Item(
+            'computer',
+            '电脑',
+            '可以用来学习和娱乐',
+            2000,
+            '电子产品',
+            [
+                { type: 'attribute', target: 'intelligence', value: 10 },
+                { type: 'attribute', target: 'happiness', value: 15 },
+                { type: 'skill', target: 'academicBasics', value: 30 }
+            ],
+            { minAge: 10 }
+        ));
+        
+        this.registerItem(new Item(
+            'professional_books',
+            '专业书籍',
+            '深入学习专业知识',
+            200,
+            '书籍',
+            [
+                { type: 'attribute', target: 'intelligence', value: 8 },
+                { type: 'skill', target: 'professionalSkills', value: 25 }
+            ],
+            { minAge: 18, lifeStage: '大学' }
+        ));
+        
+        // 健康类物品
+        this.registerItem(new Item(
+            'sports_equipment',
+            '运动器材',
+            '提高体质和健康',
+            500,
+            '装备',
+            [
+                { type: 'attribute', target: 'fitness', value: 15 },
+                { type: 'attribute', target: 'health', value: 10 },
+                { type: 'skill', target: 'physicalTraining', value: 30 }
+            ]
+        ));
+        
+        this.registerItem(new Item(
+            'healthy_food',
+            '健康食品',
+            '提供营养，恢复体力',
+            100,
+            '食品',
+            [
+                { type: 'attribute', target: 'health', value: 20 },
+                { type: 'attribute', target: 'fitness', value: 5 }
+            ]
+        ));
+        
+        // 社交类物品
+        this.registerItem(new Item(
+            'fashionable_clothes',
+            '时尚服装',
+            '提高魅力值',
+            300,
+            '服装',
+            [
+                { type: 'attribute', target: 'charm', value: 15 },
+                { type: 'skill', target: 'socialSkills', value: 10 }
+            ]
+        ));
+        
+        this.registerItem(new Item(
+            'smartphone',
+            '智能手机',
+            '方便社交和获取信息',
+            1000,
+            '电子产品',
+            [
+                { type: 'attribute', target: 'charm', value: 5 },
+                { type: 'attribute', target: 'happiness', value: 10 },
+                { type: 'skill', target: 'socialSkills', value: 15 }
+            ],
+            { minAge: 12 }
+        ));
+        
+        // 娱乐类物品
+        this.registerItem(new Item(
+            'video_game',
+            '电子游戏',
+            '提供娱乐，增加幸福感',
+            200,
+            '电子产品',
+            [
+                { type: 'attribute', target: 'happiness', value: 25 },
+                { type: 'attribute', target: 'health', value: -5 }
+            ],
+            { minAge: 8 }
+        ));
+        
+        // 特殊物品
+        this.registerItem(new Item(
+            'skill_book_social',
+            '社交技巧指南',
+            '解锁社交技能',
+            500,
+            '书籍',
+            [
+                { type: 'unlockSkill', target: 'socialSkills' }
+            ],
+            { minAge: 12 }
+        ));
+        
+        this.registerItem(new Item(
+            'skill_book_financial',
+            '个人理财入门',
+            '解锁理财技能',
+            800,
+            '书籍',
+            [
+                { type: 'unlockSkill', target: 'financialSkills' }
+            ],
+            { minAge: 18 }
+        ));
+    }
+    
+    // 注册物品到物品库
+    registerItem(item) {
+        this.items[item.id] = item;
+    }
+    
+    // 获取物品
     getItem(itemId) {
         return this.items[itemId];
     }
-
-    getAvailableItems(age, lifeStage) {
-        const availableItems = {};
-
+    
+    // 更新商店物品列表
+    updateShop(character) {
+        this.shopItems = [];
+        
+        // 根据角色年龄和生命阶段筛选可购买物品
         for (const itemId in this.items) {
-            // Check if the property belongs to `this.items` itself, not its prototype chain
-            if (this.items.hasOwnProperty(itemId)) {
-                const item = this.items[itemId];
-                if (age >= item.minAge && (item.lifeStages.includes(lifeStage) || item.lifeStages.includes("all"))) {
-                    availableItems[itemId] = item;
-                }
+            const item = this.items[itemId];
+            let canBuy = true;
+            
+            if (item.requirements.minAge && character.age < item.requirements.minAge) {
+                canBuy = false;
+            }
+            
+            if (item.requirements.lifeStage && character.lifeStage !== item.requirements.lifeStage) {
+                canBuy = false;
+            }
+            
+            if (canBuy) {
+                this.shopItems.push(item);
             }
         }
-
-        return availableItems;
-    }
-
-    
-    buyItem(itemId, character) {
-        const item = this.items[itemId];
         
-        if (!item) return false;
-        
-        if (character.money >= item.price) {
-            character.money -= item.price;
-            character.addItem({...item}); // 复制一个物品添加到库存
-            game.addEventLog(`你购买了${item.name}，花费¥${item.price}。`);
-            return true;
-        } else {
-            game.addEventLog("你没有足够的钱来购买这个物品。");
-            return false;
-        }
+        return this.shopItems;
     }
     
-    updateInventoryUI(inventory) {
-        const container = document.getElementById("inventory-container");
-        container.innerHTML = "";
+    // 渲染物品栏
+    renderInventory(character) {
+        const container = document.getElementById('inventory-container');
+        container.innerHTML = '';
         
-        if (inventory.length === 0) {
-            container.innerHTML = "<p>物品栏是空的。访问商店购买物品。</p>";
+        if (character.inventory.length === 0) {
+            container.innerHTML = '<div class="empty-inventory">物品栏为空</div>';
             return;
         }
         
-        for (const item of inventory) {
-            const itemElement = document.createElement("div");
-            itemElement.className = "inventory-item";
+        for (const item of character.inventory) {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'inventory-item';
+            itemElement.dataset.itemId = item.id;
+            
             itemElement.innerHTML = `
-                <div>${item.name}</div>
-                <div class="skill-description">${item.description}</div>
+                <div class="item-name">${item.name}</div>
+                <div class="item-description">${item.description}</div>
+                <button class="item-use">使用</button>
             `;
             
-            itemElement.addEventListener("click", () => {
-                game.character.useItem(item.id);
-                game.updateUI();
-            });
-            
             container.appendChild(itemElement);
+            
+            // 添加使用物品事件
+            itemElement.querySelector('.item-use').addEventListener('click', () => {
+                const result = character.useItem(item.id);
+                if (result && result.success) {
+                    Game.addEventLog(result.message);
+                    if (result.effects) {
+                        for (const effect of result.effects) {
+                            Game.addEventLog(`效果: ${effect}`);
+                        }
+                    }
+                    this.renderInventory(character);
+                } else if (result) {
+                    Game.addEventLog(result.message);
+                }
+            });
         }
     }
     
-    updateShopUI(lifeStage, money) {
-        const container = document.getElementById("shop-container");
-        container.innerHTML = "";
+    // 渲染商店
+    renderShop(character) {
+        const container = document.getElementById('shop-container');
+        container.innerHTML = '';
         
-        const availableItems = this.getAvailableItems(game.character.age, lifeStage);
+        const shopItems = this.updateShop(character);
         
-        if (Object.keys(availableItems).length === 0) {
-            container.innerHTML = "<p>当前阶段没有可用物品。</p>";
+        if (shopItems.length === 0) {
+            container.innerHTML = '<div class="empty-shop">商店暂无可购买物品</div>';
             return;
         }
         
-        for (const itemId in availableItems) {
-            const item = availableItems[itemId];
+        for (const item of shopItems) {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'shop-item';
             
-            const itemElement = document.createElement("div");
-            itemElement.className = "shop-item";
             itemElement.innerHTML = `
-                <div>
+                <div class="shop-item-info">
                     <div class="shop-item-name">${item.name}</div>
-                    <div class="skill-description">${item.description}</div>
+                    <div class="shop-item-description">${item.description}</div>
                 </div>
-                <div>
-                    <div class="shop-item-price">¥${item.price}</div>
-                    <button class="shop-item-buy" data-item-id="${itemId}" ${money < item.price ? 'disabled' : ''}>购买</button>
-                </div>
+                <div class="shop-item-price">¥${item.price}</div>
+                <button class="shop-item-buy" ${character.money < item.price ? 'disabled' : ''}>购买</button>
             `;
             
             container.appendChild(itemElement);
-        }
-        
-        // 添加购买按钮事件监听
-        document.querySelectorAll(".shop-item-buy").forEach(button => {
-            button.addEventListener("click", (e) => {
-                const itemId = e.target.getAttribute("data-item-id");
-                this.buyItem(itemId, game.character);
-                game.updateUI();
+            
+            // 添加购买物品事件
+            itemElement.querySelector('.shop-item-buy').addEventListener('click', () => {
+                if (character.buyItem(item)) {
+                    Game.addEventLog(`购买了 ${item.name}`);
+                    document.getElementById('money').textContent = character.money;
+                    this.renderShop(character);
+                    this.renderInventory(character);
+                } else {
+                    Game.addEventLog('金钱不足，无法购买');
+                }
             });
-        });
+        }
     }
+}
+
+// 导出ItemManager类
+if (typeof module !== 'undefined') {
+    module.exports = { Item, ItemManager };
 }

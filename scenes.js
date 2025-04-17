@@ -1,461 +1,707 @@
-// 场景管理类
+/**
+ * scenes.js - 场景模块
+ * 负责管理游戏中的场景和场景交互
+ */
+
+class Scene {
+    constructor(id, name, description, lifeStage, actions = [], requirements = {}) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.lifeStage = lifeStage; // 生命阶段：义务教育、大学、硕博、社会
+        this.actions = actions; // 可执行的操作
+        this.requirements = requirements; // 场景解锁要求
+    }
+    
+    // 检查场景是否可用
+    isAvailable(character) {
+        // 检查生命阶段
+        if (this.lifeStage && character.lifeStage !== this.lifeStage) {
+            return false;
+        }
+        
+        // 检查年龄要求
+        if (this.requirements.minAge && character.age < this.requirements.minAge) {
+            return false;
+        }
+        if (this.requirements.maxAge && character.age > this.requirements.maxAge) {
+            return false;
+        }
+        
+        // 检查属性要求
+        if (this.requirements.attributes) {
+            for (const [attr, minValue] of Object.entries(this.requirements.attributes)) {
+                if (character.attributes[attr] < minValue) {
+                    return false;
+                }
+            }
+        }
+        
+        // 检查特殊要求
+        if (this.requirements.special) {
+            for (const [key, value] of Object.entries(this.requirements.special)) {
+                if (Game.getSpecialValue(key) !== value) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    }
+    
+    // 执行场景操作
+    performAction(actionId, character) {
+        const action = this.actions.find(a => a.id === actionId);
+        if (!action) {
+            return {
+                success: false,
+                message: "操作不存在"
+            };
+        }
+        
+        // 检查操作要求
+        if (action.requirements) {
+            // 检查属性要求
+            if (action.requirements.attributes) {
+                for (const [attr, minValue] of Object.entries(action.requirements.attributes)) {
+                    if (character.attributes[attr] < minValue) {
+                        return {
+                            success: false,
+                            message: `你的${attr}不足，无法执行此操作`
+                        };
+                    }
+                }
+            }
+            
+            // 检查金钱要求
+            if (action.requirements.money && character.money < action.requirements.money) {
+                return {
+                    success: false,
+                    message: "你的金钱不足，无法执行此操作"
+                };
+            }
+            
+            // 检查时间要求
+            if (action.requirements.time && character.timeAllocation.remaining < action.requirements.time) {
+                return {
+                    success: false,
+                    message: "你的时间不足，无法执行此操作"
+                };
+            }
+        }
+        
+        // 应用操作效果
+        const results = [];
+        
+        if (action.effects) {
+            for (const effect of action.effects) {
+                switch (effect.type) {
+                    case 'attribute':
+                        if (character.attributes[effect.target]) {
+                            character.attributes[effect.target] += effect.value;
+                            character.attributes[effect.target] = Math.max(0, Math.min(100, character.attributes[effect.target]));
+                            results.push(`${effect.target} ${effect.value > 0 ? '+' : ''}${effect.value}`);
+                        }
+                        break;
+                        
+                    case 'skill':
+                        if (character.skills[effect.target] && !character.skills[effect.target].locked) {
+                            character.gainSkillExperience(effect.target, effect.value);
+                            results.push(`${effect.target} 经验 +${effect.value}`);
+                        }
+                        break;
+                        
+                    case 'money':
+                        character.money += effect.value;
+                        results.push(`金钱 ${effect.value > 0 ? '+' : ''}${effect.value}`);
+                        break;
+                        
+                    case 'time':
+                        character.timeAllocation.remaining -= effect.value;
+                        results.push(`时间 -${effect.value}%`);
+                        break;
+                        
+                    case 'special':
+                        Game.setSpecialValue(effect.target, effect.value);
+                        results.push(`特殊效果: ${effect.target} = ${effect.value}`);
+                        break;
+                }
+            }
+        }
+        
+        // 更新UI
+        character.updateUI();
+        
+        return {
+            success: true,
+            message: action.resultText || `执行了 ${action.name}`,
+            effects: results
+        };
+    }
+}
+
 class SceneManager {
     constructor() {
-        this.scenes = {
-            "home": {
-                id: "home",
-                name: "家",
-                description: "这是你的家，一个温馨的避风港。",
-                options: [
-                    {
-                        text: "学习",
-                        condition: (character) => character.age >= 6,
-                        action: (character) => {
-                            character.attributes.intelligence += 2;
-                            character.attributes.happiness -= 1;
-                            character.addSkillProgress("学术基础", 10);
-                            game.addEventLog("你在家学习了一段时间，智力+2，幸福感-1，学术基础技能进度+10。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "休息",
-                        condition: (character) => true,
-                        action: (character) => {
-                            character.attributes.health += 10;
-                            character.attributes.happiness += 5;
-                            game.addEventLog("你在家好好休息了一下，体力+10，幸福感+5。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "健身",
-                        condition: (character) => character.age >= 8,
-                        action: (character) => {
-                            character.attributes.fitness += 3;
-                            character.attributes.health -= 5;
-                            character.addSkillProgress("体育锻炼", 15);
-                            game.addEventLog("你在家锻炼了身体，体质+3，体力-5，体育锻炼技能进度+15。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "拜访邻居",
-                        condition: (character) => character.age >= 6,
-                        action: (character) => {
-                            game.npcManager.interactWithNPC("neighbor");
-                        }
-                    }
-                ]
-            },
-            "school": {
-                id: "school",
-                name: "学校",
-                description: "这是你的学校，知识的殿堂。",
-                options: [
-                    {
-                        text: "上课",
-                        condition: (character) => character.age >= 6 && character.age < 22,
-                        action: (character) => {
-                            character.attributes.intelligence += 3;
-                            character.attributes.happiness -= 2;
-                            character.attributes.health -= 5;
-                            character.addSkillProgress("学术基础", 15);
-                            game.addEventLog("你认真上课，智力+3，幸福感-2，体力-5，学术基础技能进度+15。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "参加体育活动",
-                        condition: (character) => character.age >= 6 && character.age < 22,
-                        action: (character) => {
-                            character.attributes.fitness += 4;
-                            character.attributes.health -= 10;
-                            character.attributes.happiness += 5;
-                            character.addSkillProgress("体育锻炼", 20);
-                            game.addEventLog("你参加了体育活动，体质+4，体力-10，幸福感+5，体育锻炼技能进度+20。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "与同学交流",
-                        condition: (character) => character.age >= 6 && character.age < 22,
-                        action: (character) => {
-                            character.attributes.charm += 3;
-                            character.attributes.happiness += 3;
-                            character.addSkillProgress("社交能力", 15);
-                            game.addEventLog("你与同学进行了交流，魅力+3，幸福感+3，社交能力技能进度+15。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "与老师交流",
-                        condition: (character) => character.age >= 6 && character.age < 22,
-                        action: (character) => {
-                            game.npcManager.interactWithNPC("teacher");
-                        }
-                    }
-                ]
-            },
-            "university": {
-                id: "university",
-                name: "大学",
-                description: "这是你的大学校园，充满了自由和机会。",
-                options: [
-                    {
-                        text: "上课",
-                        condition: (character) => character.lifeStage === "university",
-                        action: (character) => {
-                            character.attributes.intelligence += 4;
-                            character.attributes.health -= 5;
-                            character.addSkillProgress("学术基础", 15);
-                            character.addSkillProgress("专业技能", 10);
-                            game.addEventLog("你认真上课，智力+4，体力-5，学术基础技能进度+15，专业技能进度+10。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "参加学生活动",
-                        condition: (character) => character.lifeStage === "university",
-                        action: (character) => {
-                            character.attributes.charm += 3;
-                            character.attributes.happiness += 5;
-                            character.attributes.health -= 5;
-                            character.addSkillProgress("社交能力", 20);
-                            game.addEventLog("你参加了学生活动，魅力+3，幸福感+5，体力-5，社交能力技能进度+20。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "与同学交流",
-                        condition: (character) => character.lifeStage === "university",
-                        action: (character) => {
-                            character.attributes.charm += 3;
-                            character.attributes.happiness += 3;
-                            character.addSkillProgress("社交能力", 15);
-                            game.addEventLog("你与同学进行了交流，魅力+3，幸福感+3，社交能力技能进度+15。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "与教授交流",
-                        condition: (character) => character.lifeStage === "university",
-                        action: (character) => {
-                            game.npcManager.interactWithNPC("professor");
-                        }
-                    },
-                    {
-                        text: "学校图书馆学习",
-                        condition: (character) => character.lifeStage === "university",
-                        action: (character) => {
-                            character.attributes.intelligence += 5;
-                            character.attributes.happiness -= 3;
-                            character.attributes.health -= 8;
-                            character.addSkillProgress("学术基础", 25);
-                            character.addSkillProgress("专业技能", 15);
-                            game.addEventLog("你在图书馆认真学习，智力+5，幸福感-3，体力-8，学术基础技能进度+25，专业技能进度+15。");
-                            game.updateUI();
-                        }
-                    }
-                ]
-            },
-            "graduate_school": {
-                id: "graduate_school",
-                name: "研究生院",
-                description: "这是研究生院，更高层次的学术殿堂。",
-                options: [
-                    {
-                        text: "参加研究项目",
-                        condition: (character) => character.lifeStage === "graduate",
-                        action: (character) => {
-                            character.attributes.intelligence += 6;
-                            character.attributes.health -= 10;
-                            character.attributes.happiness -= 2;
-                            character.addSkillProgress("学术基础", 20);
-                            character.addSkillProgress("专业技能", 25);
-                            game.addEventLog("你参加了研究项目，智力+6，体力-10，幸福感-2，学术基础技能进度+20，专业技能进度+25。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "与导师交流",
-                        condition: (character) => character.lifeStage === "graduate",
-                        action: (character) => {
-                            game.npcManager.interactWithNPC("supervisor");
-                        }
-                    },
-                    {
-                        text: "撰写论文",
-                        condition: (character) => character.lifeStage === "graduate",
-                        action: (character) => {
-                            character.attributes.intelligence += 5;
-                            character.attributes.health -= 15;
-                            character.attributes.happiness -= 5;
-                            character.addSkillProgress("专业技能", 30);
-                            game.addEventLog("你专注于论文写作，智力+5，体力-15，幸福感-5，专业技能进度+30。");
-                            game.updateUI();
-                        }
-                    }
-                ]
-            },
-            "phd_program": {
-                id: "phd_program",
-                name: "博士项目",
-                description: "这是博士项目，学术研究的最高殿堂。",
-                options: [
-                    {
-                        text: "进行深入研究",
-                        condition: (character) => character.lifeStage === "phd",
-                        action: (character) => {
-                            character.attributes.intelligence += 8;
-                            character.attributes.health -= 15;
-                            character.attributes.happiness -= 5;
-                            character.addSkillProgress("专业技能", 40);
-                            game.addEventLog("你进行了深入研究，智力+8，体力-15，幸福感-5，专业技能进度+40。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "撰写博士论文",
-                        condition: (character) => character.lifeStage === "phd",
-                        action: (character) => {
-                            character.attributes.intelligence += 10;
-                            character.attributes.health -= 20;
-                            character.attributes.happiness -= 10;
-                            character.addSkillProgress("专业技能", 50);
-                            game.addEventLog("你专注于博士论文写作，智力+10，体力-20，幸福感-10，专业技能进度+50。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "与导师讨论",
-                        condition: (character) => character.lifeStage === "phd",
-                        action: (character) => {
-                            game.npcManager.interactWithNPC("supervisor");
-                        }
-                    }
-                ]
-            },
-            "work": {
-                id: "work",
-                name: "工作场所",
-                description: "这是你的工作场所，每天为生活奋斗的地方。",
-                options: [
-                    {
-                        text: "努力工作",
-                        condition: (character) => character.lifeStage === "society",
-                        action: (character) => {
-                            let salary = 1000;
-                            // 专业技能影响薪资
-                            if (character.skills["专业技能"]) {
-                                salary += character.skills["专业技能"].level * 200;
-                            }
-                            // 学历影响薪资
-                            if (character.age >= 22 && character.attributes.intelligence >= 85) {
-                                salary += 2000; // 硕士
-                            }
-                            if (character.age >= 25 && character.attributes.intelligence >= 90) {
-                                salary += 3000; // 博士
-                            }
-
-                            character.money += salary;
-                            character.attributes.health -= 15;
-                            character.attributes.happiness -= 3;
-                            character.addSkillProgress("专业技能", 20);
-                            game.addEventLog(`你努力工作，获得薪资¥${salary}，体力-15，幸福感-3，专业技能进度+20。`);
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "与同事交流",
-                        condition: (character) => character.lifeStage === "society",
-                        action: (character) => {
-                            character.attributes.charm += 4;
-                            character.attributes.happiness += 3;
-                            character.addSkillProgress("社交能力", 15);
-                            game.addEventLog("你与同事进行了愉快的交流，魅力+4，幸福感+3，社交能力技能进度+15。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "与上司交流",
-                        condition: (character) => character.lifeStage === "society",
-                        action: (character) => {
-                            game.npcManager.interactWithNPC("boss");
-                        }
-                    },
-                    {
-                        text: "学习新技能",
-                        condition: (character) => character.lifeStage === "society",
-                        action: (character) => {
-                            character.attributes.intelligence += 3;
-                            character.attributes.health -= 5;
-                            character.addSkillProgress("专业技能", 25);
-                            game.addEventLog("你学习了新的工作技能，智力+3，体力-5，专业技能进度+25。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "进行投资",
-                        condition: (character) => character.lifeStage === "society" && !character.skills["理财能力"].locked,
-                        action: (character) => {
-                            // 解锁理财能力
-                            if (character.skills["理财能力"].locked) {
-                                character.skills["理财能力"].locked = false;
-                                game.addEventLog("你开始了解投资，解锁了理财能力技能！");
-                            }
-
-                            // 基础投资回报
-                            const financialSkill = character.skills["理财能力"].level;
-                            const baseReturn = Math.random() * 0.2 - 0.05; // -5% 到 15% 的基础回报率
-                            const skillBonus = financialSkill * 0.01; // 每级理财能力增加1%回报率
-                            const returnRate = baseReturn + skillBonus;
-
-                            const investAmount = 1000;
-                            if (character.money >= investAmount) {
-                                character.money -= investAmount;
-                                const profit = investAmount * returnRate;
-                                character.money += (investAmount + profit);
-
-                                character.addSkillProgress("理财能力", 15);
-
-                                if (profit > 0) {
-                                    game.addEventLog(`你的投资获得了收益，获得¥${profit.toFixed(2)}。`);
-                                } else {
-                                    game.addEventLog(`你的投资亏损了，损失¥${Math.abs(profit).toFixed(2)}。`);
-                                }
-                            } else {
-                                game.addEventLog("你没有足够的钱来进行投资。");
-                            }
-
-                            game.updateUI();
-                        }
-                    }
-                ]
-            },
-            "park": {
-                id: "park",
-                name: "公园",
-                description: "这是一个美丽的公园，可以放松身心。",
-                options: [
-                    {
-                        text: "散步",
-                        condition: (character) => character.age >= 6,
-                        action: (character) => {
-                            character.attributes.health += 5;
-                            character.attributes.happiness += 5;
-                            character.attributes.fitness += 1;
-                            game.addEventLog("你在公园散步，体力+5，幸福感+5，体质+1。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "锻炼",
-                        condition: (character) => character.age >= 10,
-                        action: (character) => {
-                            character.attributes.fitness += 5;
-                            character.attributes.health -= 5;
-                            character.addSkillProgress("体育锻炼", 20);
-                            game.addEventLog("你在公园锻炼，体质+5，体力-5，体育锻炼技能进度+20。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "与人交谈",
-                        condition: (character) => character.age >= 8,
-                        action: (character) => {
-                            character.attributes.charm += 3;
-                            character.attributes.happiness += 3;
-                            character.addSkillProgress("社交能力", 15);
-                            game.addEventLog("你在公园与人交谈，魅力+3，幸福感+3，社交能力技能进度+15。");
-                            game.updateUI();
-                        }
-                    },
-                    {
-                        text: "遇见陌生人",
-                        condition: (character) => character.age >= 12,
-                        action: (character) => {
-                            game.npcManager.interactWithNPC("stranger");
-                        }
-                    }
-                ]
-            }
-        };
-
-        this.currentScene = "home";
+        this.scenes = {};
+        this.currentScene = null;
+        this.initializeScenes();
     }
-
-    getScene(sceneId) {
-        return this.scenes[sceneId];
+    
+    // 初始化场景库
+    initializeScenes() {
+        // 义务教育阶段场景
+        this.registerScene(new Scene(
+            'elementary_school',
+            '小学',
+            '你正在小学读书，这是基础教育的开始。',
+            '义务教育',
+            [
+                {
+                    id: 'study_hard',
+                    name: '努力学习',
+                    description: '花时间认真学习功课',
+                    requirements: { time: 10 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 3 },
+                        { type: 'skill', target: 'academicBasics', value: 10 },
+                        { type: 'attribute', target: 'happiness', value: -2 },
+                        { type: 'time', value: 10 }
+                    ],
+                    resultText: '你花时间认真学习，知识水平有所提高。'
+                },
+                {
+                    id: 'play_with_friends',
+                    name: '和朋友玩耍',
+                    description: '和同学们一起游戏',
+                    requirements: { time: 5 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 5 },
+                        { type: 'attribute', target: 'charm', value: 2 },
+                        { type: 'time', value: 5 }
+                    ],
+                    resultText: '你和朋友们玩得很开心，心情愉悦。'
+                },
+                {
+                    id: 'sports_activity',
+                    name: '参加体育活动',
+                    description: '参加学校的体育课或活动',
+                    requirements: { time: 5 },
+                    effects: [
+                        { type: 'attribute', target: 'fitness', value: 3 },
+                        { type: 'skill', target: 'physicalTraining', value: 8 },
+                        { type: 'attribute', target: 'health', value: 5 },
+                        { type: 'time', value: 5 }
+                    ],
+                    resultText: '你积极参加体育活动，身体素质得到锻炼。'
+                }
+            ],
+            { minAge: 6, maxAge: 12 }
+        ));
+        
+        this.registerScene(new Scene(
+            'middle_school',
+            '初中',
+            '你正在初中读书，学习内容开始变得更加复杂。',
+            '义务教育',
+            [
+                {
+                    id: 'study_hard',
+                    name: '努力学习',
+                    description: '花时间认真学习功课',
+                    requirements: { time: 15 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 4 },
+                        { type: 'skill', target: 'academicBasics', value: 15 },
+                        { type: 'attribute', target: 'happiness', value: -3 },
+                        { type: 'time', value: 15 }
+                    ],
+                    resultText: '你花时间认真学习，知识水平有所提高。'
+                },
+                {
+                    id: 'join_club',
+                    name: '参加兴趣小组',
+                    description: '参加学校的兴趣小组活动',
+                    requirements: { time: 10 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 5 },
+                        { type: 'attribute', target: 'charm', value: 3 },
+                        { type: 'skill', target: 'socialSkills', value: 10 },
+                        { type: 'time', value: 10 }
+                    ],
+                    resultText: '你参加了兴趣小组，结交了新朋友，学到了新技能。'
+                },
+                {
+                    id: 'sports_activity',
+                    name: '参加体育活动',
+                    description: '参加学校的体育课或活动',
+                    requirements: { time: 8 },
+                    effects: [
+                        { type: 'attribute', target: 'fitness', value: 4 },
+                        { type: 'skill', target: 'physicalTraining', value: 12 },
+                        { type: 'attribute', target: 'health', value: 6 },
+                        { type: 'time', value: 8 }
+                    ],
+                    resultText: '你积极参加体育活动，身体素质得到锻炼。'
+                }
+            ],
+            { minAge: 12, maxAge: 15 }
+        ));
+        
+        this.registerScene(new Scene(
+            'high_school',
+            '高中',
+            '你正在高中读书，面临着高考的压力。',
+            '义务教育',
+            [
+                {
+                    id: 'study_hard',
+                    name: '刻苦学习',
+                    description: '为高考做准备，刻苦学习',
+                    requirements: { time: 20 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 5 },
+                        { type: 'skill', target: 'academicBasics', value: 20 },
+                        { type: 'attribute', target: 'happiness', value: -5 },
+                        { type: 'attribute', target: 'health', value: -3 },
+                        { type: 'time', value: 20 }
+                    ],
+                    resultText: '你刻苦学习，学术能力显著提高，但感到有些疲惫。'
+                },
+                {
+                    id: 'balanced_study',
+                    name: '平衡学习',
+                    description: '保持学习与休息的平衡',
+                    requirements: { time: 15 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 3 },
+                        { type: 'skill', target: 'academicBasics', value: 12 },
+                        { type: 'attribute', target: 'happiness', value: 2 },
+                        { type: 'time', value: 15 }
+                    ],
+                    resultText: '你保持学习与休息的平衡，既提高了学习成绩，又保持了良好的心态。'
+                },
+                {
+                    id: 'part_time_job',
+                    name: '课余兼职',
+                    description: '利用课余时间做兼职赚钱',
+                    requirements: { time: 10, attributes: { charm: 30 } },
+                    effects: [
+                        { type: 'money', value: 500 },
+                        { type: 'attribute', target: 'happiness', value: -2 },
+                        { type: 'skill', target: 'socialSkills', value: 8 },
+                        { type: 'time', value: 10 }
+                    ],
+                    resultText: '你利用课余时间做兼职，赚取了一些零花钱，也积累了一些社会经验。'
+                }
+            ],
+            { minAge: 15, maxAge: 18 }
+        ));
+        
+        // 大学阶段场景
+        this.registerScene(new Scene(
+            'university',
+            '大学',
+            '你正在大学学习，拥有更多自由和选择。',
+            '大学',
+            [
+                {
+                    id: 'attend_class',
+                    name: '认真上课',
+                    description: '认真听讲，完成作业',
+                    requirements: { time: 15 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 4 },
+                        { type: 'skill', target: 'academicBasics', value: 15 },
+                        { type: 'time', value: 15 }
+                    ],
+                    resultText: '你认真上课，学术能力有所提高。'
+                },
+                {
+                    id: 'self_study',
+                    name: '自主学习',
+                    description: '在图书馆或宿舍自主学习',
+                    requirements: { time: 10 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 3 },
+                        { type: 'skill', target: 'academicBasics', value: 12 },
+                        { type: 'time', value: 10 }
+                    ],
+                    resultText: '你进行自主学习，掌握了更多知识。'
+                },
+                {
+                    id: 'part_time_job',
+                    name: '校内兼职',
+                    description: '在校内找一份兼职工作',
+                    requirements: { time: 15 },
+                    effects: [
+                        { type: 'money', value: 1000 },
+                        { type: 'skill', target: 'professionalSkills', value: 10 },
+                        { type: 'attribute', target: 'happiness', value: -3 },
+                        { type: 'time', value: 15 }
+                    ],
+                    resultText: '你在校内兼职，赚取了一些生活费，也积累了一些工作经验。'
+                },
+                {
+                    id: 'campus_activity',
+                    name: '参加校园活动',
+                    description: '参加各种校园文化活动',
+                    requirements: { time: 8 },
+                    effects: [
+                        { type: 'attribute', target: 'charm', value: 5 },
+                        { type: 'attribute', target: 'happiness', value: 8 },
+                        { type: 'skill', target: 'socialSkills', value: 15 },
+                        { type: 'time', value: 8 }
+                    ],
+                    resultText: '你积极参加校园活动，结交了许多朋友，社交能力得到提升。'
+                },
+                {
+                    id: 'exercise',
+                    name: '体育锻炼',
+                    description: '去操场或健身房锻炼身体',
+                    requirements: { time: 5 },
+                    effects: [
+                        { type: 'attribute', target: 'fitness', value: 6 },
+                        { type: 'attribute', target: 'health', value: 8 },
+                        { type: 'skill', target: 'physicalTraining', value: 15 },
+                        { type: 'time', value: 5 }
+                    ],
+                    resultText: '你坚持体育锻炼，身体素质明显提高。'
+                }
+            ],
+            { minAge: 18, maxAge: 22, special: { collegeTier: ['normal', 'good', 'top'] } }
+        ));
+        
+        // 硕博阶段场景
+        this.registerScene(new Scene(
+            'graduate_school',
+            '研究生院',
+            '你正在攻读研究生学位，专注于学术研究。',
+            '硕博',
+            [
+                {
+                    id: 'research',
+                    name: '进行研究',
+                    description: '专注于你的研究项目',
+                    requirements: { time: 25 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 6 },
+                        { type: 'skill', target: 'academicBasics', value: 25 },
+                        { type: 'attribute', target: 'happiness', value: -4 },
+                        { type: 'time', value: 25 }
+                    ],
+                    resultText: '你专注于研究工作，学术能力显著提高。'
+                },
+                {
+                    id: 'teaching_assistant',
+                    name: '担任助教',
+                    description: '为本科生课程担任助教',
+                    requirements: { time: 15 },
+                    effects: [
+                        { type: 'money', value: 2000 },
+                        { type: 'attribute', target: 'charm', value: 3 },
+                        { type: 'skill', target: 'professionalSkills', value: 15 },
+                        { type: 'time', value: 15 }
+                    ],
+                    resultText: '你担任助教工作，获得了一些收入，也锻炼了表达和组织能力。'
+                },
+                {
+                    id: 'academic_conference',
+                    name: '参加学术会议',
+                    description: '参加学术会议，分享研究成果',
+                    requirements: { time: 10, attributes: { intelligence: 70 } },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 5 },
+                        { type: 'skill', target: 'academicBasics', value: 20 },
+                        { type: 'attribute', target: 'charm', value: 4 },
+                        { type: 'special', target: 'academicReputation', value: true },
+                        { type: 'time', value: 10 }
+                    ],
+                    resultText: '你参加了学术会议，分享了研究成果，获得了同行的认可。'
+                }
+            ],
+            { minAge: 22, maxAge: 28, special: { applyMaster: true } }
+        ));
+        
+        // 社会阶段场景
+        this.registerScene(new Scene(
+            'workplace',
+            '工作场所',
+            '你正在工作单位努力工作，追求事业发展。',
+            '社会',
+            [
+                {
+                    id: 'work_hard',
+                    name: '努力工作',
+                    description: '专注于工作任务，提高工作效率',
+                    requirements: { time: 30 },
+                    effects: [
+                        { type: 'money', value: 5000 },
+                        { type: 'skill', target: 'professionalSkills', value: 20 },
+                        { type: 'attribute', target: 'happiness', value: -5 },
+                        { type: 'time', value: 30 }
+                    ],
+                    resultText: '你努力工作，完成了工作任务，获得了收入。'
+                },
+                {
+                    id: 'networking',
+                    name: '职场社交',
+                    description: '与同事和上级建立良好关系',
+                    requirements: { time: 10 },
+                    effects: [
+                        { type: 'attribute', target: 'charm', value: 5 },
+                        { type: 'skill', target: 'socialSkills', value: 15 },
+                        { type: 'special', target: 'careerOpportunity', value: true },
+                        { type: 'time', value: 10 }
+                    ],
+                    resultText: '你积极参与职场社交，建立了良好的人际关系，可能带来职业发展机会。'
+                },
+                {
+                    id: 'skill_training',
+                    name: '技能培训',
+                    description: '参加职业技能培训',
+                    requirements: { time: 15, money: 2000 },
+                    effects: [
+                        { type: 'skill', target: 'professionalSkills', value: 30 },
+                        { type: 'attribute', target: 'intelligence', value: 4 },
+                        { type: 'money', value: -2000 },
+                        { type: 'time', value: 15 }
+                    ],
+                    resultText: '你参加了技能培训，专业能力得到提升。'
+                },
+                {
+                    id: 'investment',
+                    name: '理财投资',
+                    description: '学习理财知识，进行投资',
+                    requirements: { time: 10, money: 5000 },
+                    effects: [
+                        { type: 'skill', target: 'financialSkills', value: 25 },
+                        { type: 'money', value: -5000 },
+                        { type: 'special', target: 'investment', value: true },
+                        { type: 'time', value: 10 }
+                    ],
+                    resultText: '你进行了理财投资，学习了投资知识，资金开始增值。'
+                }
+            ],
+            { minAge: 22, special: { findJob: true } }
+        ));
+        
+        this.registerScene(new Scene(
+            'entrepreneur',
+            '创业公司',
+            '你正在经营自己的创业公司，面临挑战与机遇。',
+            '社会',
+            [
+                {
+                    id: 'business_development',
+                    name: '业务拓展',
+                    description: '专注于拓展业务和客户',
+                    requirements: { time: 35 },
+                    effects: [
+                        { type: 'money', value: 10000 },
+                        { type: 'skill', target: 'professionalSkills', value: 25 },
+                        { type: 'attribute', target: 'happiness', value: -8 },
+                        { type: 'attribute', target: 'health', value: -5 },
+                        { type: 'time', value: 35 }
+                    ],
+                    resultText: '你努力拓展业务，公司收入有所增长，但工作压力很大。'
+                },
+                {
+                    id: 'team_building',
+                    name: '团队建设',
+                    description: '招聘和培训团队成员',
+                    requirements: { time: 20, money: 5000 },
+                    effects: [
+                        { type: 'money', value: -5000 },
+                        { type: 'skill', target: 'socialSkills', value: 20 },
+                        { type: 'special', target: 'teamEfficiency', value: true },
+                        { type: 'time', value: 20 }
+                    ],
+                    resultText: '你投入时间和资金进行团队建设，团队效率得到提升。'
+                },
+                {
+                    id: 'product_innovation',
+                    name: '产品创新',
+                    description: '开发新产品或服务',
+                    requirements: { time: 25, attributes: { intelligence: 60 } },
+                    effects: [
+                        { type: 'skill', target: 'professionalSkills', value: 30 },
+                        { type: 'attribute', target: 'intelligence', value: 5 },
+                        { type: 'special', target: 'productInnovation', value: true },
+                        { type: 'time', value: 25 }
+                    ],
+                    resultText: '你专注于产品创新，开发出了新的产品或服务，为公司带来了新的发展机会。'
+                }
+            ],
+            { minAge: 22, special: { startBusiness: true } }
+        ));
     }
-
-    changeScene(sceneId) {
-        if (this.scenes[sceneId]) {
-            this.currentScene = sceneId;
-            this.updateSceneUI();
-            game.addEventLog(`你来到了${this.scenes[sceneId].name}。`);
-        }
+    
+    // 注册场景到场景库
+    registerScene(scene) {
+        this.scenes[scene.id] = scene;
     }
-
-    updateSceneUI() {
-        const scene = this.scenes[this.currentScene];
-        const descriptionElement = document.getElementById("scene-description");
-        const optionsElement = document.getElementById("scene-options");
-
-        descriptionElement.textContent = scene.description;
-
-        optionsElement.innerHTML = "";
-
-        // 添加场景选项
-        for (const option of scene.options) {
-            if (option.condition(game.character)) {
-                const button = document.createElement("button");
-                button.className = "action-button scene-option";
-                button.textContent = option.text;
-                button.addEventListener("click", () => option.action(game.character));
-                optionsElement.appendChild(button);
-            }
-        }
-
-        // 添加场景切换选项
-        const sceneSelectionElement = document.createElement("div");
-        sceneSelectionElement.className = "scene-selection";
-        sceneSelectionElement.style.marginTop = "20px";
-
-        const sceneLabel = document.createElement("div");
-        sceneLabel.textContent = "前往:";
-        sceneSelectionElement.appendChild(sceneLabel);
+    
+    // 获取当前可用场景列表
+    getAvailableScenes(character) {
+        const availableScenes = [];
 
         for (const sceneId in this.scenes) {
-            if (this.scenes.hasOwnProperty(sceneId) && sceneId !== this.currentScene) {
+            if (Object.prototype.hasOwnProperty.call(this.scenes, sceneId)) {
                 const scene = this.scenes[sceneId];
-
-                // 根据生命阶段限制场景访问
-                let canAccess = true;
-                if (
-                    (sceneId === "university" && game.character.lifeStage !== "university") ||
-                    (sceneId === "graduate_school" && game.character.lifeStage !== "graduate") ||
-                    (sceneId === "phd_program" && game.character.lifeStage !== "phd") ||
-                    (sceneId === "work" && game.character.lifeStage !== "society")
-                ) {
-                    canAccess = false;
-                }
-
-                // 学校场景的年龄限制
-                if (sceneId === "school" && (game.character.age < 6 || game.character.age >= 22)) {
-                    canAccess = false;
-                }
-
-                if (canAccess) {
-                    const button = document.createElement("button");
-                    button.className = "action-button";
-                    button.textContent = scene.name;
-                    button.addEventListener("click", () => this.changeScene(sceneId));
-                    sceneSelectionElement.appendChild(button);
+                if (scene.isAvailable(character)) {
+                    availableScenes.push(scene);
                 }
             }
         }
 
-        optionsElement.appendChild(sceneSelectionElement);
+        return availableScenes;
     }
+    // 设置当前场景
+    setCurrentScene(sceneId) {
+        if (this.scenes[sceneId]) {
+            this.currentScene = this.scenes[sceneId];
+            return true;
+        }
+        return false;
+    }
+    
+    // 获取当前场景
+    getCurrentScene() {
+        return this.currentScene;
+    }
+    
+    // 渲染场景选择界面
+    renderSceneSelection(character) {
+        const container = document.getElementById('scene-container');
+        const description = document.getElementById('scene-description');
+        const options = document.getElementById('scene-options');
+        
+        // 清空内容
+        description.textContent = '选择你想要前往的场景：';
+        options.innerHTML = '';
+        
+        // 获取可用场景
+        const availableScenes = this.getAvailableScenes(character);
+        
+        if (availableScenes.length === 0) {
+            options.innerHTML = '<div>当前没有可用的场景</div>';
+            return;
+        }
+        
+        // 创建场景选项
+        for (const scene of availableScenes) {
+            const sceneButton = document.createElement('button');
+            sceneButton.className = 'action-button scene-option';
+            sceneButton.textContent = scene.name;
+            
+            sceneButton.addEventListener('click', () => {
+                this.setCurrentScene(scene.id);
+                this.renderCurrentScene(character);
+            });
+            
+            options.appendChild(sceneButton);
+        }
+    }
+    
+    // 渲染当前场景
+    renderCurrentScene(character) {
+        if (!this.currentScene) {
+            this.renderSceneSelection(character);
+            return;
+        }
+        
+        const container = document.getElementById('scene-container');
+        const description = document.getElementById('scene-description');
+        const options = document.getElementById('scene-options');
+        
+        // 设置场景描述
+        description.textContent = this.currentScene.description;
+        options.innerHTML = '';
+        
+        // 创建返回按钮
+        const backButton = document.createElement('button');
+        backButton.className = 'action-button scene-option';
+        backButton.textContent = '返回场景选择';
+        backButton.addEventListener('click', () => {
+            this.currentScene = null;
+            this.renderSceneSelection(character);
+        });
+        options.appendChild(backButton);
+        
+        // 创建场景操作按钮
+        for (const action of this.currentScene.actions) {
+            const actionButton = document.createElement('button');
+            actionButton.className = 'action-button scene-option';
+            actionButton.textContent = action.name;
+            
+            // 检查操作要求
+            let canPerform = true;
+            let requirementText = '';
+            
+            if (action.requirements) {
+                // 检查时间要求
+                if (action.requirements.time && character.timeAllocation.remaining < action.requirements.time) {
+                    canPerform = false;
+                    requirementText = `需要${action.requirements.time}%的时间`;
+                }
+                
+                // 检查金钱要求
+                if (action.requirements.money && character.money < action.requirements.money) {
+                    canPerform = false;
+                    requirementText = `需要¥${action.requirements.money}`;
+                }
+                
+                // 检查属性要求
+                if (action.requirements.attributes) {
+                    for (const [attr, minValue] of Object.entries(action.requirements.attributes)) {
+                        if (character.attributes[attr] < minValue) {
+                            canPerform = false;
+                            requirementText = `需要${attr}达到${minValue}`;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (!canPerform) {
+                actionButton.disabled = true;
+                actionButton.title = requirementText;
+            } else {
+                actionButton.addEventListener('click', () => {
+                    const result = this.currentScene.performAction(action.id, character);
+                    
+                    if (result.success) {
+                        Game.addEventLog(result.message);
+                        if (result.effects) {
+                            for (const effect of result.effects) {
+                                Game.addEventLog(`效果: ${effect}`);
+                            }
+                        }
+                        
+                        // 更新场景显示（可能需要刷新按钮状态）
+                        this.renderCurrentScene(character);
+                    } else {
+                        Game.addEventLog(result.message);
+                    }
+                });
+            }
+            
+            // 添加操作描述
+            const actionDescription = document.createElement('div');
+            actionDescription.className = 'scene-action-description';
+            actionDescription.textContent = action.description;
+            
+            const actionContainer = document.createElement('div');
+            actionContainer.className = 'scene-action-container';
+            actionContainer.appendChild(actionButton);
+            actionContainer.appendChild(actionDescription);
+            
+            options.appendChild(actionContainer);
+        }
+    }
+}
+
+// 导出SceneManager类
+if (typeof module !== 'undefined') {
+    module.exports = { Scene, SceneManager };
 }
