@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人生模拟器</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            background-color: #4a76a8;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .game-container {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .left-panel {
+            flex: 1;
+            min-width: 300px;
+            margin-right: 20px;
+        }
+        .right-panel {
+            flex: 2;
+            min-width: 400px;
+        }
+        .panel {
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .panel-header {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+        .tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab.active {
+            background-color: #4a76a8;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .attribute {
+            margin-bottom: 8px;
+        }
+        .attribute-name {
+            display: inline-block;
+            width: 100px;
+            font-weight: bold;
+        }
+        .progress-bar {
+            height: 10px;
+            background-color: #eee;
+            border-radius: 5px;
+            margin-top: 3px;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #4a76a8;
+            border-radius: 5px;
+            width: 0;
+            transition: width 0.3s;
+        }
+        .event-log {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .event-item {
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px dotted #ddd;
+        }
+        .action-button {
+            background-color: #4a76a8;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        .action-button:hover {
+            background-color: #3a5a88;
+        }
+        .action-button:disabled {
+            background-color: #999;
+            cursor: not-allowed;
+        }
+        .time-allocation {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .time-label {
+            width: 100px;
+        }
+        .time-slider {
+            flex: 1;
+            margin: 0 10px;
+        }
+        .time-value {
+            width: 40px;
+            text-align: right;
+        }
+        .skill-item {
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .skill-name {
+            font-weight: bold;
+        }
+        .skill-description {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .locked {
+            color: #999;
+        }
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .inventory-item {
+            padding: 10px;
+            background: #f1f1f1;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .inventory-item:hover {
+            background: #e5e5e5;
+        }
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .shop-item-name {
+            font-weight: bold;
+        }
+        .shop-item-price {
+            color: #e67e22;
+        }
+        .shop-item-buy {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .npc {
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #f1f1f1;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .npc:hover {
+            background: #e5e5e5;
+        }
+        .npc-name {
+            font-weight: bold;
+        }
+        .npc-relationship {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .scene-description {
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        .scene-options {
+            display: flex;
+            flex-direction: column;
+        }
+        .scene-option {
+            margin-bottom: 8px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 60%;
+            max-width: 600px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-modal:hover {
+            color: black;
+        }
+        #interaction-container {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>人生模拟器</h1>
+            <div id="basic-info">
+                年龄: <span id="age">0</span> 岁 | 
+                人生阶段: <span id="life-stage">婴儿期</span> | 
+                金钱: ¥<span id="money">0</span>
+            </div>
+        </div>
+        
+        <div class="game-container">
+            <div class="left-panel">
+                <div class="panel">
+                    <div class="panel">
+                        <div class="panel-header">年度行动</div>
+                        <button class="action-button" id="next-year">进入下一年</button>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">事件日志</div>
+                        <div class="event-log" id="event-log"></div>
+                    </div>
+                    <div class="panel-header">个人属性</div>
+                    <div class="attribute">
+                        <span class="attribute-name">体力:</span>
+                        <span id="health-value">100</span>/100
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="health-bar" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">智力:</span>
+                        <span id="intelligence-value">10</span>/100
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="intelligence-bar" style="width: 10%;"></div>
+                        </div>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">魅力:</span>
+                        <span id="charm-value">10</span>/100
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="charm-bar" style="width: 10%;"></div>
+                        </div>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">体质:</span>
+                        <span id="fitness-value">10</span>/100
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="fitness-bar" style="width: 10%;"></div>
+                        </div>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">幸福感:</span>
+                        <span id="happiness-value">50</span>/100
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="happiness-bar" style="width: 50%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <div class="panel-header">时间分配</div>
+                    <div id="time-allocation-container">
+                        <div class="time-allocation">
+                            <div class="time-label">学习:</div>
+                            <label for="study-time"></label><input type="range" min="0" max="100" value="20" class="time-slider" id="study-time">
+                            <div class="time-value" id="study-time-value">20%</div>
+                        </div>
+                        <div class="time-allocation">
+                            <div class="time-label">娱乐:</div>
+                            <label for="entertainment-time"></label><input type="range" min="0" max="100" value="20" class="time-slider" id="entertainment-time">
+                            <div class="time-value" id="entertainment-time-value">20%</div>
+                        </div>
+                        <div class="time-allocation">
+                            <div class="time-label">健身:</div>
+                            <label for="fitness-time"></label><input type="range" min="0" max="100" value="10" class="time-slider" id="fitness-time">
+                            <div class="time-value" id="fitness-time-value">10%</div>
+                        </div>
+                        <div class="time-allocation">
+                            <div class="time-label">社交:</div>
+                            <label for="social-time"></label><input type="range" min="0" max="100" value="10" class="time-slider" id="social-time">
+                            <div class="time-value" id="social-time-value">10%</div>
+                        </div>
+                        <div class="time-allocation">
+                            <div class="time-label">工作/实习:</div>
+                            <label for="work-time"></label><input type="range" min="0" max="100" value="0" class="time-slider" id="work-time">
+                            <div class="time-value" id="work-time-value">0%</div>
+                        </div>
+                        <div class="time-allocation">
+                            <div class="time-label">剩余:</div>
+                            <div class="time-value" id="remaining-time-value">40%</div>
+                        </div>
+                        <div>
+                            <button class="action-button" id="save-time-allocation">保存分配</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="panel">
+                    <div class="tabs">
+                        <div class="tab active" data-tab="skills">技能</div>
+                        <div class="tab" data-tab="inventory">资产</div>
+                        <div class="tab" data-tab="shop">市场</div>
+                        <div class="tab" data-tab="relations">人物</div>
+                        <div class="tab" data-tab="scene">场景</div>
+                    </div>
+                    
+                    <div class="tab-content active" id="skills-tab">
+                        <div id="skills-container">
+                            <div class="skill-item">
+                                <div class="skill-name">学术基础 (Level <span id="academic-basics-level">0</span>)</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="academic-basics-progress" style="width: 0;"></div>
+                                </div>
+                                <div class="skill-description">提高学习效率和考试成绩</div>
+                            </div>
+                            <div class="skill-item">
+                                <div class="skill-name">体育锻炼 (Level <span id="physical-training-level">0</span>)</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="physical-training-progress" style="width: 0;"></div>
+                                </div>
+                                <div class="skill-description">提高体质和健康</div>
+                            </div>
+                            <div class="skill-item locked">
+                                <div class="skill-name">社交能力 (Level <span id="social-skills-level">0</span>)</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="social-skills-progress" style="width: 0;"></div>
+                                </div>
+                                <div class="skill-description">提高魅力和人际关系</div>
+                            </div>
+                            <div class="skill-item locked">
+                                <div class="skill-name">专业技能 (Level <span id="professional-skills-level">0</span>)</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="professional-skills-progress" style="width: 0;"></div>
+                                </div>
+                                <div class="skill-description">提高工作效率和收入</div>
+                            </div>
+                            <div class="skill-item locked">
+                                <div class="skill-name">理财能力 (Level <span id="financial-skills-level">0</span>)</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="financial-skills-progress" style="width: 0;"></div>
+                                </div>
+                                <div class="skill-description">提高资金管理和投资回报</div>
+                            </div>
+                            <!-- 更多技能将根据生命阶段解锁 -->
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="inventory-tab">
+                        <div class="inventory-grid" id="inventory-container">
+                            <!-- 物品将动态添加 -->
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="shop-tab">
+                        <div id="shop-container">
+                            <!-- 商店物品将动态添加 -->
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="relations-tab">
+                        <div id="relations-container">
+                            <!-- 关系人物将动态添加 -->
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="scene-tab">
+                        <div id="scene-container">
+                            <div class="scene-description" id="scene-description"></div>
+                            <div class="scene-options" id="scene-options"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="event-modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-event-modal">&times;</span>
+            <h2 id="event-title">事件标题</h2>
+            <p id="event-description">事件描述...</p>
+            <div id="event-options"></div>
+        </div>
+    </div>
+    
+    <div class="modal" id="interaction-modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-interaction-modal">&times;</span>
+            <h2 id="interaction-title">互动</h2>
+            <div id="interaction-container"></div>
+        </div>
+    </div>
+
+    <script src="character.js"></script>
+    <script src="items.js"></script>
+    <script src="scenes.js"></script>
+    <script src="npcs.js"></script>
+    <script src="skills.js"></script>
+    <script src="events.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
