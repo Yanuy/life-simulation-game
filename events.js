@@ -6,7 +6,7 @@
 class EventSystem {
     constructor() {
         this.events = {
-            '义务教育': [],
+            '基础教育': [],
             '大学': [],
             '硕博': [],
             '社会': []
@@ -93,7 +93,7 @@ class EventSystem {
                 }
             ]
         });
-        
+
         this.registerEvent({
             id: 'high_school_exam',
             title: '高考',
@@ -455,15 +455,15 @@ class EventSystem {
         // 随机选择一个事件
         return eventPool[Math.floor(Math.random() * eventPool.length)];
     }
-    
-    // 处理事件选项效果
+
+// 处理事件选项效果
     processEventOption(character, option) {
         if (!option.effects) {
             return [];
         }
-        
+
         const results = [];
-        
+
         for (const effect of option.effects) {
             switch (effect.type) {
                 case 'attribute':
@@ -473,31 +473,58 @@ class EventSystem {
                         results.push(`${effect.target} ${effect.value > 0 ? '+' : ''}${effect.value}`);
                     }
                     break;
-                    
+
                 case 'skill':
                     if (character.skills[effect.target] && !character.skills[effect.target].locked) {
                         character.gainSkillExperience(effect.target, effect.value);
                         results.push(`${effect.target} 经验 +${effect.value}`);
                     }
                     break;
-                    
+
                 case 'money':
                     character.money += effect.value;
                     results.push(`金钱 ${effect.value > 0 ? '+' : ''}${effect.value}`);
                     break;
-                    
+
                 case 'special':
                     // 特殊效果需要在游戏状态中处理
                     Game.setSpecialValue(effect.target, effect.value);
                     results.push(`特殊效果: ${effect.target} = ${effect.value}`);
+
+                    // 更新教育状态标志
+                    if (effect.target === 'collegeTier' && effect.value) {
+                        character.education.hasCompletedHighSchool = true;
+                        results.push(`完成高中教育`);
+                    } else if (effect.target === 'applyMaster' && effect.value) {
+                        character.education.hasCompletedCollege = true;
+                        results.push(`完成大学教育`);
+                    } else if (effect.target === 'applyPhD' && effect.value) {
+                        character.education.hasMasterDegree = true;
+                        results.push(`完成硕士教育`);
+                    } else if (effect.target === 'skipCollege' && effect.value) {
+                        character.education.hasCompletedHighSchool = true;
+                        character.lifeStage = "社会"; // 直接进入社会
+                        results.push(`跳过大学教育，直接进入社会`);
+                    } else if (effect.target === 'findJob' && effect.value) {
+                        // 根据当前阶段设置不同的状态
+                        if (character.lifeStage === "大学") {
+                            character.education.hasCompletedCollege = true;
+                        } else if (character.lifeStage === "硕博") {
+                            character.education.hasMasterDegree = true;
+                        }
+                        results.push(`找到工作`);
+                    } else if (effect.target === 'hasJob') {
+                        character.career.hasJob = effect.value;
+                        results.push(`就业状态更新`);
+                    }
                     break;
-                    
+
                 case 'random':
                     // 处理随机效果
                     if (effect.outcomes && effect.outcomes.length > 0) {
                         const rand = Math.random();
                         let cumulativeProbability = 0;
-                        
+
                         for (const outcome of effect.outcomes) {
                             cumulativeProbability += outcome.probability;
                             if (rand < cumulativeProbability) {
@@ -512,7 +539,7 @@ class EventSystem {
                     break;
             }
         }
-        
+
         character.updateUI();
         return results;
     }

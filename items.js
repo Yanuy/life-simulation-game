@@ -22,10 +22,8 @@ class Item {
         if (this.requirements.minIntelligence && character.attributes.intelligence < this.requirements.minIntelligence) {
             return false;
         }
-        if (this.requirements.lifeStage && character.lifeStage !== this.requirements.lifeStage) {
-            return false;
-        }
-        return true;
+        return !(this.requirements.lifeStage && character.lifeStage !== this.requirements.lifeStage);
+
     }
     
     // 使用物品，应用效果
@@ -196,7 +194,78 @@ class ItemManager {
             ],
             { minAge: 8 }
         ));
-        
+        // 电动车
+        this.registerItem(new Item(
+            'electric_bike',
+            '电动车',
+            '环保出行工具，适合城市通勤',
+            4000,
+            '交通工具',
+            [
+                { type: 'attribute', target: 'fitness', value: 10 },
+                { type: 'attribute', target: 'happiness', value: 20 },
+                { type: 'skill', target: 'urbanTransport', value: 15 }
+            ],
+            { minAge: 12 }  // 需要18岁以上解锁
+        ));
+
+        // 笔记本电脑
+        this.registerItem(new Item(
+            'laptop',
+            '笔记本电脑',
+            '方便工作与学习，适合移动办公',
+            5000,
+            '电子产品',
+            [
+                { type: 'attribute', target: 'intelligence', value: 15 },
+                { type: 'attribute', target: 'happiness', value: 20 },
+                { type: 'skill', target: 'digitalSkills', value: 25 }
+            ],
+            { minAge: 14 }  // 需要15岁以上解锁
+        ));
+
+        // 衣服（如正式西装）
+        this.registerItem(new Item(
+            'suit',
+            '西装',
+            '提高职场魅力，适合正式场合',
+            3000,
+            '服装',
+            [
+                { type: 'attribute', target: 'charm', value: 20 },
+                { type: 'attribute', target: 'socialSkills', value: 10 }
+            ],
+            { minAge: 16, lifeStage: '职场' }  // 职场阶段才解锁
+        ));
+
+        // 房子
+        this.registerItem(new Item(
+            'house',
+            '房子',
+            '安稳的住所，可以提供长期的生活保障',
+            1000000,
+            '大宗资产',
+            [
+                { type: 'attribute', target: 'happiness', value: 50 },
+                { type: 'attribute', target: 'wealth', value: 1000 }
+            ],
+            { minAge: 19 }  // 需要30岁以上解锁
+        ));
+
+        // 车子（如轿车）
+        this.registerItem(new Item(
+            'car',
+            '轿车',
+            '个人交通工具，提供便捷的出行',
+            200000,
+            '大宗资产',
+            [
+                { type: 'attribute', target: 'happiness', value: 30 },
+                { type: 'attribute', target: 'fitness', value: -5 },  // 久坐影响健康
+                { type: 'attribute', target: 'wealth', value: 500 }
+            ],
+            { minAge: 18}  // 需要25岁以上解锁
+        ));
         // 特殊物品
         this.registerItem(new Item(
             'skill_book_social',

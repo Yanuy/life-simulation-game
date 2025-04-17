@@ -17,7 +17,7 @@ class NPC {
     // 检查NPC是否可用
     isAvailable(character) {
         // 检查生命阶段
-        if (this.lifeStage && character.lifeStage !== this.lifeStage) {
+        if (this.lifeStage !== 'all' && this.lifeStage && character.lifeStage !== this.lifeStage) {
             return false;
         }
         
@@ -165,6 +165,7 @@ class NPCManager {
     initializeNPCs() {
         // 义务教育阶段NPC
         this.registerNPC(new NPC(
+
             'elementary_teacher',
             '小学老师',
             '你的小学班主任，负责教导你基础知识。',
@@ -199,7 +200,100 @@ class NPCManager {
             ],
             { minAge: 6, maxAge: 12 }
         ));
-        
+        // 父母NPC
+        this.registerNPC(new NPC(
+            'father',
+            '父亲',
+            '你关心的父亲，照顾你成长，给你很多的支持。',
+            'all',
+            50,
+            [
+                {
+                    id: 'talk_about_day',
+                    name: '谈论一天的事情',
+                    description: '和父亲聊聊你今天发生的事情',
+                    requirements: { time: 10 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 5 },
+                        { type: 'relationship', value: 5 },
+                        { type: 'time', value: 10 }
+                    ],
+                    resultText: '你和父亲聊了聊今天的事情，增进了彼此的理解和感情。'
+                },
+                {
+                    id: 'help_father',
+                    name: '帮助父亲',
+                    description: '帮父亲做些家务或工作',
+                    requirements: { time: 8 },
+                    effects: [
+                        { type: 'attribute', target: 'charm', value: 2 },
+                        { type: 'relationship', value: 6 },
+                        { type: 'time', value: 8 }
+                    ],
+                    resultText: '你帮父亲做了一些事情，他非常高兴，并感谢你。'
+                },
+                {
+                    id: 'ask_allowance',
+                    name: '索要零花钱',
+                    description: '向父亲索要零花钱，看看他会不会给你。',
+                    requirements: { time: 3 },
+                    effects: [
+                        { type: 'relationship', value: 2 },
+                        { type: 'money', value: 100 },
+                        { type: 'time', value: 3 }
+                    ],
+                    resultText: '你向父亲索要零花钱，父亲虽然有些无奈，但最终给了你一些钱。'
+                }
+            ],
+            { minAge: 0, maxAge: 100 }
+        ));
+
+        this.registerNPC(new NPC(
+            'mother',
+            '母亲',
+            '你深爱的母亲，总是关心着你的生活。',
+            'all',
+            50,
+            [
+                {
+                    id: 'talk_about_day',
+                    name: '谈论一天的事情',
+                    description: '和母亲分享你的日常。',
+                    requirements: { time: 10 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 5 },
+                        { type: 'relationship', value: 5 },
+                        { type: 'time', value: 10 }
+                    ],
+                    resultText: '你和母亲聊了聊今天的事情，感觉心情愉快。'
+                },
+                {
+                    id: 'help_mother',
+                    name: '帮助母亲',
+                    description: '帮母亲做些家务或者照顾家庭',
+                    requirements: { time: 8 },
+                    effects: [
+                        { type: 'attribute', target: 'charm', value: 2 },
+                        { type: 'relationship', value: 6 },
+                        { type: 'time', value: 8 }
+                    ],
+                    resultText: '你帮母亲做了家务，母亲非常高兴并感谢你。'
+                },
+                {
+                    id: 'ask_allowance',
+                    name: '索要零花钱',
+                    description: '向母亲索要零花钱，看看她是否愿意给你。',
+                    requirements: { time: 3 },
+                    effects: [
+                        { type: 'relationship', value: 2 },
+                        { type: 'money', value: 50 },
+                        { type: 'time', value: 3 }
+                    ],
+                    resultText: '你向母亲索要零花钱，母亲有些心软，最终给了你一些钱。'
+                }
+            ],
+            { minAge: 0, maxAge: 100 }
+        ));
         this.registerNPC(new NPC(
             'elementary_classmate',
             '小学同学',
@@ -235,7 +329,79 @@ class NPCManager {
             ],
             { minAge: 6, maxAge: 12 }
         ));
-        
+        // 初中阶段NPC
+        this.registerNPC(new NPC(
+            'middle_school_teacher',
+            '初中老师',
+            '你的初中班主任，负责教导你各类学科知识。',
+            '义务教育',
+            35,
+            [
+                {
+                    id: 'ask_advice',
+                    name: '请教学科问题',
+                    description: '向老师请教学科上的疑问，获得更深入的理解。',
+                    requirements: { time: 6 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 4 },
+                        { type: 'skill', target: 'academicBasics', value: 12 },
+                        { type: 'relationship', value: 4 },
+                        { type: 'time', value: 6 }
+                    ],
+                    resultText: '你向老师请教了学科问题，收获了更多的知识和启发。'
+                },
+                {
+                    id: 'class_participation',
+                    name: '积极参与课堂',
+                    description: '在课堂上积极举手发言，展示自己对知识的掌握。',
+                    requirements: { time: 4 },
+                    effects: [
+                        { type: 'attribute', target: 'confidence', value: 3 },
+                        { type: 'relationship', value: 2 },
+                        { type: 'time', value: 4 }
+                    ],
+                    resultText: '你在课堂上积极发言，增加了自信，老师对你的印象更好。'
+                }
+            ],
+            { minAge: 12, maxAge: 15 }
+        ));
+
+        this.registerNPC(new NPC(
+            'middle_school_classmate',
+            '初中同学',
+            '你的初中同班同学，可以一起讨论学科问题。',
+            '义务教育',
+            25,
+            [
+                {
+                    id: 'study_group',
+                    name: '一起做题',
+                    description: '和同学一起做作业或复习考试题目，提升学业水平。',
+                    requirements: { time: 7 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 3 },
+                        { type: 'skill', target: 'academicBasics', value: 7 },
+                        { type: 'relationship', value: 3 },
+                        { type: 'time', value: 7 }
+                    ],
+                    resultText: '你和同学一起做了题目，互相讨论，进步了不少。'
+                },
+                {
+                    id: 'share_experience',
+                    name: '分享学习经验',
+                    description: '和同学交流学习技巧与方法。',
+                    requirements: { time: 5 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 2 },
+                        { type: 'skill', target: 'academicBasics', value: 5 },
+                        { type: 'relationship', value: 3 },
+                        { type: 'time', value: 5 }
+                    ],
+                    resultText: '你分享了自己的学习经验，同学们也受益匪浅。'
+                }
+            ],
+            { minAge: 12, maxAge: 15 }
+        ));
         this.registerNPC(new NPC(
             'high_school_teacher',
             '高中老师',
@@ -273,7 +439,112 @@ class NPCManager {
             ],
             { minAge: 15, maxAge: 18 }
         ));
-        
+        this.registerNPC(new NPC(
+            'high_school_classmate',
+            '高中同学',
+            '你的高中同班同学，可以一起讨论问题，也能一起参加课外活动。',
+            '义务教育',
+            20,
+            [
+                {
+                    id: 'study_group',
+                    name: '学习小组',
+                    description: '和同学一起组成学习小组，共同复习考试',
+                    requirements: { time: 6 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 3 },
+                        { type: 'skill', target: 'academicAdvanced', value: 6 },
+                        { type: 'relationship', value: 4 },
+                        { type: 'time', value: 6 }
+                    ],
+                    resultText: '你和同学一起复习，互相讨论，提升了自己的成绩。'
+                },
+                {
+                    id: 'sports_activity',
+                    name: '课外活动',
+                    description: '和同学一起参加课外活动，放松身心',
+                    requirements: { time: 7 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 7 },
+                        { type: 'relationship', value: 5 },
+                        { type: 'time', value: 7 }
+                    ],
+                    resultText: '你和同学一起参加了体育活动，增进了友谊，身心得到了放松。'
+                }
+            ],
+            { minAge: 15, maxAge: 18 }
+        ));
+
+        // 高中优秀同学
+        this.registerNPC(new NPC(
+            'high_school_top_student',
+            '高中优秀同学',
+            '成绩好，经常分享学习经验。',
+            '义务教育',
+            22,
+            [
+                {
+                    id: 'ask_study_tips',
+                    name: '请教学习方法',
+                    description: '向学霸请教学习方法和技巧',
+                    requirements: { time: 4 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 5 },
+                        { type: 'skill', target: 'academicAdvanced', value: 8 },
+                        { type: 'relationship', value: 2 },
+                        { type: 'time', value: 4 }
+                    ],
+                    resultText: '你向学霸请教了学习方法，收获了许多实用的技巧，学习效率提升。'
+                },
+                {
+                    id: 'study_together',
+                    name: '一起学习',
+                    description: '和学霸一起学习，学习氛围十分浓厚',
+                    requirements: { time: 8 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 6 },
+                        { type: 'skill', target: 'academicAdvanced', value: 10 },
+                        { type: 'relationship', value: 4 },
+                        { type: 'time', value: 8 }
+                    ],
+                    resultText: '你和学霸一起学习，互相帮助，进步了很多。'
+                }
+            ],
+            { minAge: 15, maxAge: 18 }
+        ));
+        this.registerNPC(new NPC(
+            'graduate_classmate',
+            '毕业同学',
+            '和你一同毕业的同学，现在可能已经有了各自的职业。',
+            '社会',
+            30,
+            [
+                {
+                    id: 'networking',
+                    name: '建立联系',
+                    description: '与毕业后的同学建立联系，交换近况。',
+                    requirements: { time: 3 },
+                    effects: [
+                        { type: 'relationship', value: 5 },
+                        { type: 'time', value: 3 }
+                    ],
+                    resultText: '你和毕业同学联系上了，互相了解了彼此的近况。'
+                },
+                {
+                    id: 'career_advice',
+                    name: '职业建议',
+                    description: '向已经进入职场的同学请教职业发展的建议。',
+                    requirements: { time: 6 },
+                    effects: [
+                        { type: 'attribute', target: 'confidence', value: 3 },
+                        { type: 'relationship', value: 4 },
+                        { type: 'time', value: 6 }
+                    ],
+                    resultText: '同学给了你很多关于职场的建议，你受益匪浅。'
+                }
+            ],
+            { minAge: 18 }
+        ));
         // 大学阶段NPC
         this.registerNPC(new NPC(
             'university_professor',
@@ -429,7 +700,7 @@ class NPCManager {
                     resultText: '你与同事成功合作完成了工作项目，提升了专业能力，也增进了合作关系。'
                 }
             ],
-            { minAge: 22, special: { hasJob: true } }
+            { minAge: 22 }
         ));
         
         this.registerNPC(new NPC(
@@ -466,7 +737,7 @@ class NPCManager {
                     resultText: '你加班加点完成了重要任务，虽然很累，但上司对你的印象大大提升。'
                 }
             ],
-            { minAge: 22, special: { hasJob: true } }
+            { minAge: 22}
         ));
     }
     

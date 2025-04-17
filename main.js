@@ -115,6 +115,7 @@ class Game {
         
         // 添加事件日志
         this.addEventLog(`你长大了一岁，现在${result.newAge}岁了。`);
+        this.triggerMandatoryAgeEvents();
         if (result.newStage !== this.character.lifeStage) {
             this.addEventLog(`你进入了人生的新阶段：${result.newStage}`);
         }
@@ -152,7 +153,39 @@ class Game {
             this.eventSystem.showEventModal(event, this.character);
         }
     }
-    
+    triggerMandatoryAgeEvents() {
+        const character = this.character;
+        const age = character.age;
+        const lifeStage = character.lifeStage;
+
+        // 检查是否有必须触发的特定年龄事件
+        if (age === 18 && lifeStage === "义务教育") {
+            // 查找高考事件
+            const highSchoolExam = this.eventSystem.events["基础教育"].find(
+                event => event.id === 'high_school_exam' && event.minAge === 18
+            );
+
+            if (highSchoolExam) {
+                this.eventSystem.showEventModal(highSchoolExam, character);
+                return true;
+            }
+        }
+
+        // 大学阶段事件触发条件
+        if (age === 21 && lifeStage === "大学") {
+            const collegeGraduation = this.eventSystem.events["大学"].find(
+                event => event.id === 'college_graduation' && event.minAge === 22
+            );
+
+            if (collegeGraduation) {
+                this.eventSystem.showEventModal(collegeGraduation, character);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     // 添加事件日志
     static addEventLog(message) {
         const logContainer = document.getElementById('event-log');

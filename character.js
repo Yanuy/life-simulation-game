@@ -92,35 +92,35 @@ class Character {
             }
         }
     }
-    
+
     // 增加年龄并处理生命阶段变化
     ageUp() {
         this.age++;
         this.updateLifeStage();
         this.updateEducationStatus();
         this.applyTimeAllocationEffects();
+        const originalStage = this.lifeStage;
         this.updateUI();
-        
+
         return {
             newAge: this.age,
-            newStage: this.lifeStage
+            newStage: originalStage
         };
     }
-    
-    // 更新生命阶段
+
     updateLifeStage() {
-        if (this.age < 18) {
+        // 特殊处理：18岁时保持在义务教育阶段，以确保高考事件能触发
+        if (this.age < 19) {
             this.lifeStage = "义务教育";
         } else if (this.age < 22 && this.education.hasCompletedHighSchool) {
             this.lifeStage = "大学";
-        } else if ((this.age < 25 && this.education.hasCompletedCollege) || 
-                  (this.age < 28 && this.education.hasMasterDegree)) {
+        } else if ((this.age < 25 && this.education.hasCompletedCollege) ||
+            (this.age < 28 && this.education.hasMasterDegree)) {
             this.lifeStage = "硕博";
         } else {
             this.lifeStage = "社会";
         }
     }
-    
     // 更新教育状态
     updateEducationStatus() {
         if (this.lifeStage === "义务教育") {

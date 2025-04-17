@@ -16,7 +16,7 @@ class Scene {
     // 检查场景是否可用
     isAvailable(character) {
         // 检查生命阶段
-        if (this.lifeStage && character.lifeStage !== this.lifeStage) {
+        if (this.lifeStage !== "all" && character.lifeStage !== this.lifeStage) {
             return false;
         }
         
@@ -368,7 +368,7 @@ class SceneManager {
                     resultText: '你坚持体育锻炼，身体素质明显提高。'
                 }
             ],
-            { minAge: 18, maxAge: 22, special: { collegeTier: ['normal', 'good', 'top'] } }
+            { minAge: 18, maxAge: 22 }
         ));
         
         // 硕博阶段场景
@@ -482,7 +482,7 @@ class SceneManager {
                     resultText: '你进行了理财投资，学习了投资知识，资金开始增值。'
                 }
             ],
-            { minAge: 22, special: { findJob: true } }
+            { minAge: 22 }
         ));
         
         this.registerScene(new Scene(
@@ -534,8 +534,606 @@ class SceneManager {
             ],
             { minAge: 22, special: { startBusiness: true } }
         ));
+
+// 家庭场景
+        this.registerScene(new Scene(
+            'home',
+            '家',
+            '这是你的住所，可以在这里休息、学习或进行家务活动。',
+            'all',
+            [
+                {
+                    id: 'rest',
+                    name: '休息',
+                    description: '在家中好好休息恢复精力',
+                    requirements: { time: 8 },
+                    effects: [
+                        { type: 'attribute', target: 'health', value: 10 },
+                        { type: 'attribute', target: 'happiness', value: 5 },
+                        { type: 'time', value: 8 }
+                    ],
+                    resultText: '你在家好好休息了一下，恢复了精力。'
+                },
+                {
+                    id: 'home_study',
+                    name: '在家学习',
+                    description: '利用家中安静的环境专心学习',
+                    requirements: { time: 5 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 2 },
+                        { type: 'skill', target: 'academicBasics', value: 8 },
+                        { type: 'time', value: 5 }
+                    ],
+                    resultText: '你在家中安静地学习，提高了自己的学术能力。'
+                },
+                {
+                    id: 'housework',
+                    name: '做家务',
+                    description: '打扫卫生，整理房间',
+                    requirements: { time: 3 },
+                    effects: [
+                        { type: 'attribute', target: 'health', value: 2 },
+                        { type: 'attribute', target: 'happiness', value: 3 },
+                        { type: 'time', value: 3 }
+                    ],
+                    resultText: '你认真做了家务，家里变得干净整洁，心情也变好了。'
+                },
+                {
+                    id: 'cook_meal',
+                    name: '自己做饭',
+                    description: '自己下厨准备一顿美食',
+                    requirements: { time: 4, money: 50 },
+                    effects: [
+                        { type: 'attribute', target: 'health', value: 5 },
+                        { type: 'attribute', target: 'happiness', value: 4 },
+                        { type: 'skill', target: 'cooking', value: 10 },
+                        { type: 'money', value: -50 },
+                        { type: 'time', value: 4 }
+                    ],
+                    resultText: '你亲自下厨做了一顿美味的饭菜，既省钱又健康，烹饪技能也有所提升。'
+                },
+                {
+                    id: 'online_shopping',
+                    name: '网上购物',
+                    description: '在网上购买日常用品或自己喜欢的东西',
+                    requirements: { time: 2, money: 200 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 8 },
+                        { type: 'money', value: -200 },
+                        { type: 'time', value: 2 }
+                    ],
+                    resultText: '你在网上购买了一些东西，花了一些钱，但心情愉悦。'
+                }
+            ],
+            { minAge: 15, maxAge: 80 }
+        ));
+
+// 便利店场景
+        this.registerScene(new Scene(
+            'convenience_store',
+            '便利店',
+            '24小时营业的便利店，可以购买日常用品和食物。',
+            'all',
+            [
+                {
+                    id: 'buy_snacks',
+                    name: '购买零食',
+                    description: '买一些零食解馋',
+                    requirements: { time: 1, money: 30 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 3 },
+                        { type: 'attribute', target: 'health', value: -1 },
+                        { type: 'money', value: -30 },
+                        { type: 'time', value: 1 }
+                    ],
+                    resultText: '你买了一些零食，享受美味的同时心情变好了。'
+                },
+                {
+                    id: 'buy_necessities',
+                    name: '购买日用品',
+                    description: '购买日常生活必需品',
+                    requirements: { time: 2, money: 100 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 1 },
+                        { type: 'money', value: -100 },
+                        { type: 'time', value: 2 }
+                    ],
+                    resultText: '你购买了一些生活必需品，为日常生活做好了准备。'
+                },
+                {
+                    id: 'part_time_convenience',
+                    name: '便利店兼职',
+                    description: '在便利店做兼职工作',
+                    requirements: { time: 6 },
+                    effects: [
+                        { type: 'money', value: 300 },
+                        { type: 'attribute', target: 'happiness', value: -2 },
+                        { type: 'skill', target: 'socialSkills', value: 5 },
+                        { type: 'time', value: 6 }
+                    ],
+                    resultText: '你在便利店兼职了几个小时，赚取了一些收入，也锻炼了与人交流的能力。'
+                },
+                {
+                    id: 'lottery',
+                    name: '买彩票',
+                    description: '试试运气，购买彩票',
+                    requirements: { time: 1, money: 20 },
+                    effects: [
+                        { type: 'money', value: -20 },
+                        { type: 'attribute', target: 'happiness', value: 2 },
+                        { type: 'time', value: 1 },
+                        {
+                            type: 'randomEvent',
+                            chance: 0.01,
+                            successEffects: [
+                                { type: 'money', value: 1000 },
+                                { type: 'attribute', target: 'happiness', value: 20 }
+                            ],
+                            successText: '恭喜你中奖了！获得了1000元奖金！',
+                            failureText: '很遗憾，这次没有中奖。'
+                        }
+                    ],
+                    resultText: '你买了一张彩票，期待着中奖的可能。'
+                }
+            ],
+            { minAge: 3, maxAge: 80 }
+        ));
+
+// 餐厅场景
+        this.registerScene(new Scene(
+            'restaurant',
+            '餐厅',
+            '提供各种美食的餐厅，可以用餐或工作。',
+            'all',
+            [
+                {
+                    id: 'eat_meal',
+                    name: '用餐',
+                    description: '在餐厅享用一顿美食',
+                    requirements: { time: 2, money: 80 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 5 },
+                        { type: 'attribute', target: 'health', value: 3 },
+                        { type: 'money', value: -80 },
+                        { type: 'time', value: 2 }
+                    ],
+                    resultText: '你在餐厅享用了一顿美食，感到满足和愉悦。'
+                },
+                {
+                    id: 'luxury_dinner',
+                    name: '高级晚餐',
+                    description: '在高档餐厅享用豪华晚餐',
+                    requirements: { time: 3, money: 300 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 10 },
+                        { type: 'attribute', target: 'health', value: 5 },
+                        { type: 'attribute', target: 'charm', value: 3 },
+                        { type: 'money', value: -300 },
+                        { type: 'time', value: 3 }
+                    ],
+                    resultText: '你在高档餐厅享用了一顿豪华晚餐，不仅味蕾得到满足，还提升了自己的品味。'
+                },
+                {
+                    id: 'business_meal',
+                    name: '商务聚餐',
+                    description: '与同事或合作伙伴进行商务聚餐',
+                    requirements: { time: 4, money: 200, attributes: { charm: 40 } },
+                    effects: [
+                        { type: 'attribute', target: 'charm', value: 5 },
+                        { type: 'skill', target: 'businessNegotiation', value: 15 },
+                        { type: 'money', value: -200 },
+                        { type: 'time', value: 4 }
+                    ],
+                    resultText: '你参加了商务聚餐，不仅享用了美食，还拓展了人脉，提升了商务谈判能力。'
+                },
+                {
+                    id: 'work_restaurant',
+                    name: '餐厅工作',
+                    description: '在餐厅做服务员或厨师助手',
+                    requirements: { time: 8 },
+                    effects: [
+                        { type: 'money', value: 400 },
+                        { type: 'attribute', target: 'happiness', value: -3 },
+                        { type: 'attribute', target: 'fitness', value: 2 },
+                        { type: 'skill', target: 'cooking', value: 8 },
+                        { type: 'skill', target: 'socialSkills', value: 10 },
+                        { type: 'time', value: 8 }
+                    ],
+                    resultText: '你在餐厅工作了一天，虽然有些疲惫，但赚取了收入，并提升了烹饪和社交能力。'
+                }
+            ],
+            { minAge: 8, maxAge: 80 }
+        ));
+
+// 酒吧场景
+        this.registerScene(new Scene(
+            'bar',
+            '酒吧',
+            '灯光昏暗的酒吧，可以喝酒、社交或放松。',
+            'all',
+            [
+                {
+                    id: 'drink_alcohol',
+                    name: '小酌几杯',
+                    description: '在酒吧喝几杯酒放松心情',
+                    requirements: { time: 3, money: 120, minAge: 18 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 8 },
+                        { type: 'attribute', target: 'health', value: -3 },
+                        { type: 'money', value: -120 },
+                        { type: 'time', value: 3 }
+                    ],
+                    resultText: '你在酒吧喝了几杯酒，感到放松和愉悦，但也有些微醺。'
+                },
+                {
+                    id: 'social_networking',
+                    name: '社交聚会',
+                    description: '在酒吧与朋友或新认识的人社交',
+                    requirements: { time: 4, money: 150, minAge: 18, attributes: { charm: 35 } },
+                    effects: [
+                        { type: 'attribute', target: 'charm', value: 6 },
+                        { type: 'skill', target: 'socialSkills', value: 15 },
+                        { type: 'attribute', target: 'happiness', value: 7 },
+                        { type: 'money', value: -150 },
+                        { type: 'time', value: 4 }
+                    ],
+                    resultText: '你在酒吧参加了社交聚会，结交了新朋友，社交能力和魅力都有所提升。'
+                },
+                {
+                    id: 'perform_bar',
+                    name: '酒吧表演',
+                    description: '在酒吧进行音乐或其他才艺表演',
+                    requirements: { time: 5, attributes: { charm: 50 }, skills: { musicPerformance: 30 } },
+                    effects: [
+                        { type: 'money', value: 300 },
+                        { type: 'attribute', target: 'charm', value: 8 },
+                        { type: 'skill', target: 'musicPerformance', value: 20 },
+                        { type: 'attribute', target: 'happiness', value: 12 },
+                        { type: 'time', value: 5 }
+                    ],
+                    resultText: '你在酒吧进行了精彩的表演，赢得了观众的喝彩，既赚取了收入，又提升了表演技能。'
+                },
+                {
+                    id: 'work_bartender',
+                    name: '调酒师工作',
+                    description: '在酒吧担任调酒师',
+                    requirements: { time: 8, minAge: 18, skills: { bartending: 20 } },
+                    effects: [
+                        { type: 'money', value: 500 },
+                        { type: 'skill', target: 'bartending', value: 15 },
+                        { type: 'skill', target: 'socialSkills', value: 10 },
+                        { type: 'attribute', target: 'charm', value: 4 },
+                        { type: 'attribute', target: 'happiness', value: -2 },
+                        { type: 'time', value: 8 }
+                    ],
+                    resultText: '你在酒吧担任调酒师，调制了各种鸡尾酒，赚取了不少小费，也提升了调酒技能。'
+                }
+            ],
+            { minAge: 18, maxAge: 80 }
+        ));
+
+// 图书馆场景
+        this.registerScene(new Scene(
+            'library',
+            '图书馆',
+            '安静的图书馆，可以阅读、学习或研究。',
+            'all',
+            [
+                {
+                    id: 'read_books',
+                    name: '阅读书籍',
+                    description: '在图书馆阅读各类书籍',
+                    requirements: { time: 4 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 4 },
+                        { type: 'skill', target: 'academicBasics', value: 10 },
+                        { type: 'attribute', target: 'happiness', value: 3 },
+                        { type: 'time', value: 4 }
+                    ],
+                    resultText: '你在图书馆读了几本好书，学到了新知识，也放松了心情。'
+                },
+                {
+                    id: 'study_library',
+                    name: '专心学习',
+                    description: '在图书馆安静的环境中专心学习',
+                    requirements: { time: 6 },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 6 },
+                        { type: 'skill', target: 'academicBasics', value: 18 },
+                        { type: 'attribute', target: 'happiness', value: -1 },
+                        { type: 'time', value: 6 }
+                    ],
+                    resultText: '你在图书馆专心学习了几个小时，学术能力有显著提高，但感到有些疲惫。'
+                },
+                {
+                    id: 'research',
+                    name: '进行研究',
+                    description: '查阅资料进行特定课题的研究',
+                    requirements: { time: 8, attributes: { intelligence: 60 } },
+                    effects: [
+                        { type: 'attribute', target: 'intelligence', value: 8 },
+                        { type: 'skill', target: 'research', value: 25 },
+                        { type: 'attribute', target: 'happiness', value: 5 },
+                        { type: 'time', value: 8 }
+                    ],
+                    resultText: '你在图书馆进行了深入研究，取得了一些成果，研究能力显著提高。'
+                },
+                {
+                    id: 'work_library',
+                    name: '图书馆工作',
+                    description: '在图书馆担任管理员或助理',
+                    requirements: { time: 5 },
+                    effects: [
+                        { type: 'money', value: 250 },
+                        { type: 'attribute', target: 'intelligence', value: 2 },
+                        { type: 'skill', target: 'organization', value: 12 },
+                        { type: 'time', value: 5 }
+                    ],
+                    resultText: '你在图书馆工作，整理书籍和帮助读者，赚取了一些收入，也提升了组织能力。'
+                }
+            ],
+            { minAge: 5, maxAge: 80 }
+        ));
+
+// 公园场景
+        this.registerScene(new Scene(
+            'park',
+            '公园',
+            '绿树成荫的公园，可以锻炼、放松或约会。',
+            'all',
+            [
+                {
+                    id: 'exercise_park',
+                    name: '户外锻炼',
+                    description: '在公园进行跑步、健身等锻炼',
+                    requirements: { time: 3 },
+                    effects: [
+                        { type: 'attribute', target: 'fitness', value: 8 },
+                        { type: 'attribute', target: 'health', value: 7 },
+                        { type: 'skill', target: 'physicalTraining', value: 15 },
+                        { type: 'time', value: 3 }
+                    ],
+                    resultText: '你在公园进行了户外锻炼，身体素质和健康状况都有所提高。'
+                },
+                {
+                    id: 'relaxation',
+                    name: '休闲放松',
+                    description: '在公园散步或坐在湖边放松',
+                    requirements: { time: 2 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 6 },
+                        { type: 'attribute', target: 'health', value: 3 },
+                        { type: 'attribute', target: 'stress', value: -8 },
+                        { type: 'time', value: 2 }
+                    ],
+                    resultText: '你在公园休闲放松，呼吸新鲜空气，心情变得愉悦，压力也减轻了。'
+                },
+                {
+                    id: 'dating',
+                    name: '公园约会',
+                    description: '在公园与喜欢的人约会',
+                    requirements: { time: 4, money: 100, relationship: true },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 12 },
+                        { type: 'attribute', target: 'charm', value: 5 },
+                        { type: 'relationship', target: 'intimacy', value: 15 },
+                        { type: 'money', value: -100 },
+                        { type: 'time', value: 4 }
+                    ],
+                    resultText: '你在公园与心仪的人进行了一次浪漫约会，关系更加亲密了。'
+                },
+                {
+                    id: 'photography',
+                    name: '公园摄影',
+                    description: '在公园拍摄自然风景或人像',
+                    requirements: { time: 3, skills: { photography: 20 } },
+                    effects: [
+                        { type: 'skill', target: 'photography', value: 12 },
+                        { type: 'attribute', target: 'happiness', value: 6 },
+                        { type: 'attribute', target: 'creativity', value: 8 },
+                        { type: 'time', value: 3 }
+                    ],
+                    resultText: '你在公园拍摄了一些精美的照片，提升了摄影技能，也激发了创造力。'
+                }
+            ],
+            { minAge: 1, maxAge: 80 }
+        ));
+
+// 购物中心场景
+        this.registerScene(new Scene(
+            'shopping_mall',
+            '购物中心',
+            '大型购物中心，有各种商店、餐厅和娱乐设施。',
+            'all',
+            [
+                {
+                    id: 'shopping',
+                    name: '购物',
+                    description: '在购物中心购买服装、电子产品等',
+                    requirements: { time: 3, money: 500 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 8 },
+                        { type: 'attribute', target: 'charm', value: 3 },
+                        { type: 'money', value: -500 },
+                        { type: 'time', value: 3 }
+                    ],
+                    resultText: '你在购物中心买了一些心仪的物品，心情愉悦，也提升了自己的形象。'
+                },
+                {
+                    id: 'window_shopping',
+                    name: '逛街',
+                    description: '在购物中心闲逛，不一定购买',
+                    requirements: { time: 2 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 4 },
+                        { type: 'attribute', target: 'stress', value: -5 },
+                        { type: 'time', value: 2 }
+                    ],
+                    resultText: '你在购物中心悠闲地逛了一圈，放松了心情，减轻了压力。'
+                },
+                {
+                    id: 'cinema',
+                    name: '看电影',
+                    description: '在购物中心的电影院观看电影',
+                    requirements: { time: 3, money: 80 },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 7 },
+                        { type: 'attribute', target: 'creativity', value: 3 },
+                        { type: 'money', value: -80 },
+                        { type: 'time', value: 3 }
+                    ],
+                    resultText: '你在电影院观看了一部精彩的电影，既放松了心情，也得到了一些启发。'
+                },
+                {
+                    id: 'work_retail',
+                    name: '零售工作',
+                    description: '在购物中心的商店担任销售员',
+                    requirements: { time: 8, attributes: { charm: 35 } },
+                    effects: [
+                        { type: 'money', value: 450 },
+                        { type: 'skill', target: 'salesmanship', value: 15 },
+                        { type: 'skill', target: 'socialSkills', value: 10 },
+                        { type: 'attribute', target: 'happiness', value: -2 },
+                        { type: 'time', value: 8 }
+                    ],
+                    resultText: '你在购物中心的商店工作了一天，赚取了收入，销售和社交能力也有所提升。'
+                }
+            ],
+            { minAge: 16, maxAge: 80 }
+        ));
+
+// 健身房场景
+        this.registerScene(new Scene(
+            'gym',
+            '健身房',
+            '设备齐全的健身房，可以进行各种健身活动。',
+            'all',
+            [
+                {
+                    id: 'workout',
+                    name: '进行健身',
+                    description: '使用健身器材进行锻炼',
+                    requirements: { time: 2, money: 50 },
+                    effects: [
+                        { type: 'attribute', target: 'fitness', value: 10 },
+                        { type: 'attribute', target: 'health', value: 8 },
+                        { type: 'skill', target: 'physicalTraining', value: 18 },
+                        { type: 'money', value: -50 },
+                        { type: 'time', value: 2 }
+                    ],
+                    resultText: '你在健身房进行了高强度训练，身体素质显著提高。'
+                },
+                {
+                    id: 'yoga',
+                    name: '瑜伽课程',
+                    description: '参加健身房的瑜伽课程',
+                    requirements: { time: 2, money: 80 },
+                    effects: [
+                        { type: 'attribute', target: 'fitness', value: 5 },
+                        { type: 'attribute', target: 'health', value: 7 },
+                        { type: 'attribute', target: 'stress', value: -10 },
+                        { type: 'skill', target: 'yoga', value: 15 },
+                        { type: 'money', value: -80 },
+                        { type: 'time', value: 2 }
+                    ],
+                    resultText: '你参加了瑜伽课程，身体变得更加柔韧，心灵也得到了放松。'
+                },
+                {
+                    id: 'personal_trainer',
+                    name: '私人教练',
+                    description: '请私人教练指导健身',
+                    requirements: { time: 3, money: 300 },
+                    effects: [
+                        { type: 'attribute', target: 'fitness', value: 15 },
+                        { type: 'attribute', target: 'health', value: 12 },
+                        { type: 'skill', target: 'physicalTraining', value: 25 },
+                        { type: 'money', value: -300 },
+                        { type: 'time', value: 3 }
+                    ],
+                    resultText: '在私人教练的专业指导下，你的健身效果显著提高，学到了正确的锻炼方法。'
+                },
+                {
+                    id: 'work_trainer',
+                    name: '健身教练工作',
+                    description: '在健身房担任健身教练',
+                    requirements: { time: 6, attributes: { fitness: 80 }, skills: { physicalTraining: 60 } },
+                    effects: [
+                        { type: 'money', value: 600 },
+                        { type: 'skill', target: 'coaching', value: 20 },
+                        { type: 'attribute', target: 'fitness', value: 5 },
+                        { type: 'time', value: 6 }
+                    ],
+                    resultText: '你在健身房担任教练，指导会员正确健身，赚取了丰厚的收入，也提升了教练技能。'
+                }
+            ],
+            { minAge: 10, maxAge: 70 }
+        ));
+
+// 医院场景
+        this.registerScene(new Scene(
+            'hospital',
+            '医院',
+            '提供医疗服务的场所，可以就医或工作。',
+            'all',
+            [
+                {
+                    id: 'medical_checkup',
+                    name: '体检',
+                    description: '进行全面体检',
+                    requirements: { time: 4, money: 300 },
+                    effects: [
+                        { type: 'attribute', target: 'health', value: 10 },
+                        { type: 'attribute', target: 'intelligence', value: 2 },
+                        { type: 'money', value: -300 },
+                        { type: 'time', value: 4 }
+                    ],
+                    resultText: '你进行了全面体检，及时了解了自己的健康状况，也学到了一些健康知识。'
+                },
+                {
+                    id: 'treatment',
+                    name: '接受治疗',
+                    description: '生病时前往医院接受治疗',
+                    requirements: { time: 5, money: 500 },
+                    effects: [
+                        { type: 'attribute', target: 'health', value: 30 },
+                        { type: 'attribute', target: 'happiness', value: 15 },
+                        { type: 'money', value: -500 },
+                        { type: 'time', value: 5 }
+                    ],
+                    resultText: '你在医院接受了治疗，健康状况大为改善，心情也变好了。'
+                },
+                {
+                    id: 'volunteer',
+                    name: '医院志愿者',
+                    description: '在医院担任志愿者，帮助病人',
+                    requirements: { time: 4, attributes: { charm: 40 } },
+                    effects: [
+                        { type: 'attribute', target: 'happiness', value: 10 },
+                        { type: 'skill', target: 'socialSkills', value: 12 },
+                        { type: 'skill', target: 'medicine', value: 8 },
+                        { type: 'time', value: 4 }
+                    ],
+                    resultText: '你在医院担任志愿者，帮助病人，不仅感到充实，也学到了一些医疗知识。'
+                },
+                {
+                    id: 'work_medical',
+                    name: '医护工作',
+                    description: '在医院担任医生或护士',
+                    requirements: { time: 10, attributes: { intelligence: 70 }, skills: { medicine: 80 } },
+                    effects: [
+                        { type: 'money', value: 1000 },
+                        { type: 'skill', target: 'medicine', value: 20 },
+                        { type: 'attribute', target: 'happiness', value: 5 },
+                        { type: 'attribute', target: 'stress', value: 8 },
+                        { type: 'time', value: 10 }
+                    ],
+                    resultText: '你在医院工作了一天，治疗了许多病人，赚取了丰厚的收入，医学技能也有所提高，但也感到一些压力。'
+                }
+            ],
+            { minAge: 12, maxAge: 80 }
+        ));
     }
-    
+
     // 注册场景到场景库
     registerScene(scene) {
         this.scenes[scene.id] = scene;
