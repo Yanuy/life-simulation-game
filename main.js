@@ -161,7 +161,7 @@ class Game {
         // 检查是否有必须触发的特定年龄事件
         if (age === 18 && lifeStage === "义务教育") {
             // 查找高考事件
-            const highSchoolExam = this.eventSystem.events["基础教育"].find(
+            const highSchoolExam = this.eventSystem.events["义务教育"].find(
                 event => event.id === 'high_school_exam' && event.minAge === 18
             );
 

@@ -6,7 +6,7 @@
 class EventSystem {
     constructor() {
         this.events = {
-            '基础教育': [],
+            '义务教育': [],
             '大学': [],
             '硕博': [],
             '社会': []
